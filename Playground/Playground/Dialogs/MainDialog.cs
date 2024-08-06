@@ -27,7 +27,7 @@ namespace Playground.Dialogs
     }
     public class MainDialog : ComponentDialog
     {
-        private string APIBaseUrl = "https://delivery-3rd-test-api.azurewebsites.net";
+        private string APIBaseUrl = "";
         private string RiderId = "637937263065127099";
         private EmployeeDetails _employeeDetails;
         private readonly IRestClientService _restClientService;
@@ -97,9 +97,10 @@ namespace Playground.Dialogs
             {
                 if (_employeeDetails is null)
                 {
-                    _employeeDetails = await _restClientService.Get<EmployeeDetails>($"{APIBaseUrl}/api/Rider/GetRiderInfo/{RiderId}", new { });
-                    _isReady = _employeeDetails.OnWorkStatus;
+                    var riderDetailsApi = $"{APIBaseUrl}/api/Rider/GetRiderInfo/{RiderId}";
+                    _employeeDetails = await _restClientService.Get<EmployeeDetails>(riderDetailsApi, new { });
                 }
+                _isReady = _employeeDetails.OnWorkStatus;
                 var messageText = $"สถานะไรเดอร์ {riderStatus()}";
                 var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
                 return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
@@ -175,13 +176,15 @@ namespace Playground.Dialogs
                     switch ((switchTo)stepContext.Values["SwitchTo"])
                     {
                         case switchTo.Ready:
-                            await _restClientService.Put<EmployeeDetails>($"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOn/{RiderId}", string.Empty, new { });
-                            _isReady = true;
+                            var turnOnApi = $"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOn/{RiderId}";
+                            _employeeDetails = await _restClientService.Put<EmployeeDetails>(turnOnApi, string.Empty, new { });
                             break;
+
                         case switchTo.NotReady:
-                            await _restClientService.Put<EmployeeDetails>($"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOff/{RiderId}", string.Empty, new { });
-                            _isReady = false;
+                            var turnOffApi = $"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOff/{RiderId}";
+                            _employeeDetails = await _restClientService.Put<EmployeeDetails>(turnOffApi, string.Empty, new { });
                             break;
+
                         default:
                             _employeeDetails = null;
                             break;
