@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Flurl.Http" Version="4.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.1" />
     <PackageReference Include="Microsoft.Bot.Builder.Dialogs" Version="4.22.7" />
     <PackageReference Include="Microsoft.Bot.Builder.Dialogs.Declarative" Version="4.22.7" />

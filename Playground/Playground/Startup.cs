@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Playground.Bots;
 using Playground.Dialogs;
+using Playground.Services;
 using System.Collections.Concurrent;
 
 namespace Playground
@@ -64,6 +65,9 @@ namespace Playground
 
             // Create the bot as a transient. In this case the ASP Controller is expecting an IBot.
             services.AddTransient<IBot, DialogBot<MainDialog>>();
+
+            // Create the Rest Client Service
+            services.AddTransient<IRestClientService, RestClientService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

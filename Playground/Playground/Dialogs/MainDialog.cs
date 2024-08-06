@@ -7,9 +7,19 @@ using System.Threading.Tasks;
 using System.Threading;
 using System;
 using Playground.Models;
+using Playground.Services;
 
 namespace Playground.Dialogs
 {
+    public class EmployeeDetails
+    {
+        public string _id { get; set; }
+        public string DeliveryName { get; set; }
+        public string Address { get; set; }
+        public bool OnWorkStatus { get; set; }
+        public bool Suspended { get; set; }
+        public string PhoneNumber { get; set; }
+    }
     public enum switchTo
     {
         Ready,
@@ -17,6 +27,10 @@ namespace Playground.Dialogs
     }
     public class MainDialog : ComponentDialog
     {
+        private string APIBaseUrl = "https://delivery-3rd-test-api.azurewebsites.net";
+        private string RiderId = "637937263065127099";
+        private EmployeeDetails _employeeDetails;
+        private readonly IRestClientService _restClientService;
         private readonly ILogger _logger;
         private bool _isLinkedAccount;
         private bool _isReady;
@@ -25,9 +39,10 @@ namespace Playground.Dialogs
         private readonly string _contractCmd = "ติดต่อ";
         private bool _switchReadying = false;
 
-        public MainDialog(LinkAccountDialog linkAccountDialog, OrderFlowDialog orderFlowDialog, ILogger<MainDialog> logger)
+        public MainDialog(LinkAccountDialog linkAccountDialog, OrderFlowDialog orderFlowDialog, IRestClientService restClientService, ILogger<MainDialog> logger)
             : base(nameof(MainDialog))
         {
+            _restClientService = restClientService;
             _logger = logger;
 
             AddDialog(new TextPrompt(nameof(TextPrompt)));
@@ -80,6 +95,11 @@ namespace Playground.Dialogs
         {
             if (_isLinkedAccount)
             {
+                if (_employeeDetails is null)
+                {
+                    _employeeDetails = await _restClientService.Get<EmployeeDetails>($"{APIBaseUrl}/api/Rider/GetRiderInfo/{RiderId}", new { });
+                    _isReady = _employeeDetails.OnWorkStatus;
+                }
                 var messageText = $"สถานะไรเดอร์ {riderStatus()}";
                 var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
                 return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
@@ -124,7 +144,11 @@ namespace Playground.Dialogs
                         promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
                         return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
 
-                    case "ติดต่อ": messageText = $"Admin Solar deilvery{Environment.NewLine}02-12345678"; break;
+                    case "ติดต่อ": messageText = $"Admin {_employeeDetails.DeliveryName} deilvery{Environment.NewLine}{_employeeDetails.PhoneNumber}";
+                        promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
+                        await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
+                        break;
+
                     default:
                         messageText = "ระบบไม่เข้าใจคำขอของคุณ";
                         promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
@@ -137,7 +161,6 @@ namespace Playground.Dialogs
                 var linkAccountDetails = new LinkAccountDetails();
                 return await stepContext.BeginDialogAsync(nameof(LinkAccountDialog), linkAccountDetails, cancellationToken);
             }
-
             return await stepContext.NextAsync(null, cancellationToken);
         }
         private async Task<DialogTurnResult> Rider_FinalStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -149,12 +172,20 @@ namespace Playground.Dialogs
                     break;
 
                 case bool srResult when srResult:
-                    _isReady = (switchTo)stepContext.Values["SwitchTo"] switch
+                    switch ((switchTo)stepContext.Values["SwitchTo"])
                     {
-                        switchTo.Ready => true,
-                        switchTo.NotReady => false,
-                        _ => _isReady
-                    };
+                        case switchTo.Ready:
+                            await _restClientService.Put<EmployeeDetails>($"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOn/{RiderId}", string.Empty, new { });
+                            _isReady = true;
+                            break;
+                        case switchTo.NotReady:
+                            await _restClientService.Put<EmployeeDetails>($"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOff/{RiderId}", string.Empty, new { });
+                            _isReady = false;
+                            break;
+                        default:
+                            _employeeDetails = null;
+                            break;
+                    }
                     stepContext.Values.Remove("SwitchTo");
                     break;
 
