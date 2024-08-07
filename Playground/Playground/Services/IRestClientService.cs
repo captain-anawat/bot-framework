@@ -19,7 +19,10 @@ namespace Playground.Services
             var rsp = await endpointUrl
                 .WithHeaders(headers)
                 .GetAsync();
-            return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
+            if (rsp.StatusCode == 200) 
+                return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
+
+            return default(T);
         }
 
         public async Task<T> Post<T>(string endpointUrl, string requestBody, object headers)
@@ -27,7 +30,10 @@ namespace Playground.Services
             var rsp = await endpointUrl
                 .WithHeaders(headers)
                 .PostAsync(new StringContent(requestBody, Encoding.UTF8, "application/json"));
-            return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
+            if (rsp.StatusCode == 200)
+                return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
+
+            return default(T);
         }
 
         public async Task<T> Put<T>(string endpointUrl, string requestBody, object headers)
@@ -35,7 +41,10 @@ namespace Playground.Services
             var rsp = await endpointUrl
                 .WithHeaders(headers)
                 .PutAsync(new StringContent(requestBody, Encoding.UTF8, "application/json"));
-            return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
+            if (rsp.StatusCode == 200)
+                return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
+
+            return default(T);
         }
     }
 }

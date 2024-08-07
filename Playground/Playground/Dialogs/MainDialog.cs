@@ -8,6 +8,7 @@ using System.Threading;
 using System;
 using Playground.Models;
 using Playground.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Playground.Dialogs
 {
@@ -27,7 +28,7 @@ namespace Playground.Dialogs
     }
     public class MainDialog : ComponentDialog
     {
-        private string APIBaseUrl = "";
+        private string APIBaseUrl = "https://delivery-3rd-test-api.azurewebsites.net";
         private string RiderId = "637937263065127099";
         private EmployeeDetails _employeeDetails;
         private readonly IRestClientService _restClientService;
@@ -81,8 +82,11 @@ namespace Playground.Dialogs
 
                 switch (text)
                 {
-                    case "รับออเดอร์":
-                        var orderDetails = new OrderDetails { OrderAccept = true };
+                    case string s when s.StartsWith("รับออเดอร์") && s.Split(' ').Length == 2:
+                        var orderId = s.Split(' ')[1].Trim();
+                        var acceptOrderApi = $"{APIBaseUrl}/api/Rider/RiderAcceptOrder/{RiderId}/{orderId}";
+                        await _restClientService.Put<IActionResult>(acceptOrderApi, string.Empty, new { });
+                        var orderDetails = new OrderDetails { OrderId = orderId, OrderAccept = true };
                         return await innerDc.BeginDialogAsync(nameof(OrderFlowDialog), orderDetails, cancellationToken);
 
                     default: break;
@@ -173,16 +177,19 @@ namespace Playground.Dialogs
                     break;
 
                 case bool srResult when srResult:
+                    EmployeeDetails response;
                     switch ((switchTo)stepContext.Values["SwitchTo"])
                     {
                         case switchTo.Ready:
                             var turnOnApi = $"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOn/{RiderId}";
-                            _employeeDetails = await _restClientService.Put<EmployeeDetails>(turnOnApi, string.Empty, new { });
+                            response = await _restClientService.Put<EmployeeDetails>(turnOnApi, string.Empty, new { });
+                            _employeeDetails = response is not null ? response : _employeeDetails;
                             break;
 
                         case switchTo.NotReady:
                             var turnOffApi = $"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOff/{RiderId}";
-                            _employeeDetails = await _restClientService.Put<EmployeeDetails>(turnOffApi, string.Empty, new { });
+                            response = await _restClientService.Put<EmployeeDetails>(turnOffApi, string.Empty, new { });
+                            _employeeDetails = response is not null ? response : _employeeDetails;
                             break;
 
                         default:

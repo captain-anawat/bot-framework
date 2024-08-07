@@ -55,19 +55,6 @@ namespace Playground.Dialogs
             };
             return await stepContext.PromptAsync(nameof(TextPrompt), promptOptions, cancellationToken);
         }
-
-        private async Task<DialogTurnResult> ConfirmStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
-        {
-            var details = (LinkAccountDetails)stepContext.Options;
-
-            var choice = stepContext.Result;
-            details.Scanned = choice.ToString();
-
-            var messageText = "Please confirm, link line account: xxx and mana account: xxx";
-            var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
-
-            return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
-        }
         private async Task<DialogTurnResult> FinalStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var details = (LinkAccountDetails)stepContext.Options;
