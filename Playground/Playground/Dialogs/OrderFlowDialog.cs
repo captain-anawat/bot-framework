@@ -38,9 +38,9 @@ namespace Playground.Dialogs
             var card = new HeroCard
             {
                 Title = "ดูข้อมูลออเดอร์หรืออัพเดทสถานะออเดอร์",
-                Subtitle = "ดูข้อมูลออเดอร์หรืออัพเดทสถานะออเดอร์ ผ่านจากลิงค์นี้ https://www.google.com/",
+                Subtitle = "ผ่านจากลิงค์นี้ https://devster-delivery-test.onmana.space/apprider/index.html#/order-stage",
                 Buttons = new List<CardAction> {
-                            new(ActionTypes.OpenUrl, title: "ดูออเดอร์", value: "https://www.google.com/"),
+                            new(ActionTypes.OpenUrl, title: "เปิดลิงคิ์", value: "https://devster-delivery-test.onmana.space/apprider/index.html#/order-stage"),
                             new(ActionTypes.ImBack, title: "จบงาน", value: "จบงาน"),
                         }
             };
