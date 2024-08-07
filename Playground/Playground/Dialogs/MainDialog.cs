@@ -39,7 +39,6 @@ namespace Playground.Dialogs
         private readonly string _readyCmd = "เปิด";
         private readonly string _notReadyCmd = "ปิด";
         private readonly string _contractCmd = "ติดต่อ";
-        private readonly string _onProcessCmd = "งานค้าง";
         private bool _switchReadying = false;
 
         public MainDialog(LinkAccountDialog linkAccountDialog, OrderFlowDialog orderFlowDialog, IRestClientService restClientService, ILogger<MainDialog> logger)
@@ -116,8 +115,7 @@ namespace Playground.Dialogs
                     {
                         new Choice { Value = _readyCmd },
                         new Choice { Value = _notReadyCmd },
-                        new Choice { Value = _contractCmd },
-                        new Choice { Value = _onProcessCmd }
+                        new Choice { Value = _contractCmd }
                     }
                 }, cancellationToken);
             }
@@ -157,19 +155,6 @@ namespace Playground.Dialogs
                         await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
                         break;
 
-                    case "งานค้าง":
-                        if (_employeeDetails.OrderRequest is not null)
-                        {
-                            var orderDetails = new OrderDetails { OrderId = _employeeDetails.OrderRequest._id, OrderAccept = true };
-                            return await stepContext.BeginDialogAsync(nameof(OrderFlowDialog), orderDetails, cancellationToken);
-                        }
-                        else
-                        {
-                            messageText = "ไม่มีงานค้าง";
-                            promptMessage = MessageFactory.Text(messageText, messageText);
-                            await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
-                        }
-                        break;
                     default:
                         messageText = "ระบบไม่เข้าใจคำขอของคุณ";
                         promptMessage = MessageFactory.Text(messageText, messageText);
