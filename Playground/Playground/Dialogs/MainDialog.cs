@@ -1,14 +1,14 @@
-﻿using Microsoft.Bot.Builder.Dialogs.Choices;
+﻿using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
-using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.Dialogs.Choices;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
-using System.Threading;
-using System;
+using Playground.Controllers;
 using Playground.Models;
 using Playground.Services;
-using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Playground.Dialogs
 {
@@ -20,6 +20,7 @@ namespace Playground.Dialogs
         public bool OnWorkStatus { get; set; }
         public bool Suspended { get; set; }
         public string PhoneNumber { get; set; }
+        public OrderResponse OrderRequest { get; set; }
     }
     public enum switchTo
     {
@@ -85,7 +86,7 @@ namespace Playground.Dialogs
                     case string s when s.StartsWith("รับออเดอร์") && s.Split(' ').Length == 2:
                         var orderId = s.Split(' ')[1].Trim();
                         var acceptOrderApi = $"{APIBaseUrl}/api/Rider/RiderAcceptOrder/{RiderId}/{orderId}";
-                        await _restClientService.Put<IActionResult>(acceptOrderApi, string.Empty, new { });
+                        await _restClientService.Put(acceptOrderApi, string.Empty);
                         var orderDetails = new OrderDetails { OrderId = orderId, OrderAccept = true };
                         return await innerDc.BeginDialogAsync(nameof(OrderFlowDialog), orderDetails, cancellationToken);
 
@@ -102,7 +103,7 @@ namespace Playground.Dialogs
                 if (_employeeDetails is null)
                 {
                     var riderDetailsApi = $"{APIBaseUrl}/api/Rider/GetRiderInfo/{RiderId}";
-                    _employeeDetails = await _restClientService.Get<EmployeeDetails>(riderDetailsApi, new { });
+                    _employeeDetails = await _restClientService.Get<EmployeeDetails>(riderDetailsApi);
                 }
                 _isReady = _employeeDetails.OnWorkStatus;
                 var messageText = $"สถานะไรเดอร์ {riderStatus()}";
@@ -182,13 +183,13 @@ namespace Playground.Dialogs
                     {
                         case switchTo.Ready:
                             var turnOnApi = $"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOn/{RiderId}";
-                            response = await _restClientService.Put<EmployeeDetails>(turnOnApi, string.Empty, new { });
+                            response = await _restClientService.Put<EmployeeDetails>(turnOnApi, string.Empty);
                             _employeeDetails = response is not null ? response : _employeeDetails;
                             break;
 
                         case switchTo.NotReady:
                             var turnOffApi = $"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOff/{RiderId}";
-                            response = await _restClientService.Put<EmployeeDetails>(turnOffApi, string.Empty, new { });
+                            response = await _restClientService.Put<EmployeeDetails>(turnOffApi, string.Empty);
                             _employeeDetails = response is not null ? response : _employeeDetails;
                             break;
 
