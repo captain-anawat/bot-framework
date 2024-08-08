@@ -68,6 +68,9 @@ namespace Playground
 
             // Create the Rest Client Service
             services.AddTransient<IRestClientService, RestClientService>();
+
+            // Create the Bot state Service.
+            services.AddTransient<IBotStateService, BotStateService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

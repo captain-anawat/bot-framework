@@ -22,8 +22,7 @@ namespace Playground.Dialogs
             var waterfallSteps = new WaterfallStep[]
             {
                 OnProcess,
-                UpdateStatus,
-                Canceling
+                UpdateStatus
             };
 
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), waterfallSteps));
@@ -69,23 +68,6 @@ namespace Playground.Dialogs
                 case "ยกเลิก":
                     var orderDetails = (OrderDetails)stepContext.Options;
                     return await stepContext.BeginDialogAsync(nameof(OrderCancellationDialog), orderDetails, cancellationToken);
-
-                default:
-                    return await stepContext.ReplaceDialogAsync(nameof(OrderFlowDialog), stepContext.Options, cancellationToken);
-            }
-        }
-        private async Task<DialogTurnResult> Canceling(WaterfallStepContext stepContext, CancellationToken cancellationToken)
-        {
-            var details = (OrderDetails)stepContext.Options;
-            switch (stepContext.Result)
-            {
-                case OrderDetails result:
-                    details.Status = result.Status;
-                    details.Remark = result.Remark;
-                    string messageText = $"สถานะการปิดงาน {result.Status.ToString()}{Environment.NewLine}{result.Remark}";
-                    var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
-                    await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
-                    return await stepContext.EndDialogAsync(details, cancellationToken);
 
                 default:
                     return await stepContext.ReplaceDialogAsync(nameof(OrderFlowDialog), stepContext.Options, cancellationToken);
