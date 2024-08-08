@@ -75,7 +75,9 @@ namespace Playground.Dialogs
                         userDetails.RequestOrder = string.Empty;
                         await _botStateService.SaveChangesAsync(innerDc.Context);
 
-                        return await innerDc.ReplaceDialogAsync(InitialDialogId, cancellationToken);
+                        // Restart the main dialog with a different message the second time around
+                        var promptMessage2 = "What else can I do for you?";
+                        return await innerDc.ReplaceDialogAsync(InitialDialogId, promptMessage2, cancellationToken);
                 }
             }
             return null;
@@ -105,8 +107,11 @@ namespace Playground.Dialogs
                     Prompt = (Activity)MessageFactory.Attachment(card.ToAttachment()),
                     Style = ListStyle.Auto,
                 };
+                var messageText = $"สถานะไรเดอร์ กำลังวิ่งงาน";
+                var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
                 return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
                 {
+                    Prompt = promptMessage,
                     Choices = new[]
                     {
                         new Choice { Value = _contractCmd }
@@ -169,7 +174,7 @@ namespace Playground.Dialogs
 
                     case "ติดต่อ":
                         messageText = $"Admin {_employeeDetails.DeliveryName} deilvery{Environment.NewLine}{_employeeDetails.PhoneNumber}";
-                        promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
+                        promptMessage = MessageFactory.Text(messageText, messageText);
                         await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
                         break;
 
@@ -225,7 +230,9 @@ namespace Playground.Dialogs
                     break;
             }
 
-            return await stepContext.ReplaceDialogAsync(InitialDialogId, cancellationToken);
+            // Restart the main dialog with a different message the second time around
+            var promptMessage2 = "What else can I do for you?";
+            return await stepContext.ReplaceDialogAsync(InitialDialogId, promptMessage2, cancellationToken);
         }
     }
 }

@@ -63,8 +63,8 @@ namespace Playground.Dialogs
             details.Scanned = choice.ToString();
 
             var messageText = $"คุณได้ทำการผูก line account กับ mana เรียบร้อยแล้ว{Environment.NewLine}ยินดีต้อนรับร้าน wib cafe";
-            var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
-            await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+            var reply = MessageFactory.Text(messageText, messageText);
+            await stepContext.Context.SendActivityAsync(reply, cancellationToken);
             return await stepContext.EndDialogAsync(details, cancellationToken);
         }
     }
