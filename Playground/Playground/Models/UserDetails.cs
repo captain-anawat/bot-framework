@@ -1,6 +1,4 @@
-﻿using Playground.Dialogs;
-
-namespace Playground.Models
+﻿namespace Playground.Models
 {
     public class UserDetails
     {
