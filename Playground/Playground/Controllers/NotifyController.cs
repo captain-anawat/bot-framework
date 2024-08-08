@@ -69,8 +69,8 @@ namespace Playground.Controllers
             }
         }
 
-        [HttpGet("{riderId}/{orderId}")]
-        public async Task<IActionResult> Timeup(string riderId, string orderId)
+        [HttpGet("{riderId}")]
+        public async Task<IActionResult> Timeup(string riderId)
         {
             foreach (var conversationReference in _conversationReferences.Values)
             {
@@ -81,7 +81,7 @@ namespace Playground.Controllers
             async Task TimeupBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
             {
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
-                if (userDetails.RiderId != riderId || userDetails.RequestOrder != orderId) return;
+                if (userDetails.RiderId != riderId) return;
 
                 userDetails.RequestOrder = string.Empty;
                 await _botStateService.SaveChangesAsync(turnContext);
