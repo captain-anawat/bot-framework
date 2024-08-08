@@ -86,7 +86,7 @@ namespace Playground.Controllers
                 userDetails.RequestOrder = string.Empty;
                 await _botStateService.SaveChangesAsync(turnContext);
 
-                var messageText = "คุณกดไม่ทับเวลารับงาน กรุณารองานถัดไป";
+                var messageText = "คุณกดรับไม่ทันเวลาที่กำหนด กรุณารองานถัดไป";
                 var reply = MessageFactory.Text(messageText, messageText);
                 await turnContext.SendActivityAsync(reply, cancellationToken);
             }
