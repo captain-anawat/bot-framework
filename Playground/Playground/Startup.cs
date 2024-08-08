@@ -51,14 +51,8 @@ namespace Playground
             // Create the Concurrent dictionary.
             services.AddSingleton<ConcurrentDictionary<string, ConversationReference>>();
 
-            // Register the OrderInterruptDialog.
-            services.AddSingleton<OrderCancellationDialog>();
-
             // Register the LinkAccountDialog.
             services.AddSingleton<LinkAccountDialog>();
-
-            // Register the OrderFlowDialog.
-            services.AddSingleton<OrderFlowDialog>();
 
             // The MainDialog that will be run by the bot.
             services.AddSingleton<MainDialog>();
