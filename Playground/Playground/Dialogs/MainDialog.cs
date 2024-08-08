@@ -75,18 +75,7 @@ namespace Playground.Dialogs
                         userDetails.RequestOrder = string.Empty;
                         await _botStateService.SaveChangesAsync(innerDc.Context);
 
-                        var card = new HeroCard
-                        {
-                            Title = "ดูข้อมูลออเดอร์หรืออัพเดทสถานะออเดอร์",
-                            Subtitle = "ผ่านจากลิงค์นี้ https://devster-delivery-test.onmana.space/apprider/index.html#/order-stage",
-                            Buttons = new List<CardAction> {
-                                new(ActionTypes.OpenUrl, title: "เปิดลิงคิ์", value: "https://devster-delivery-test.onmana.space/apprider/index.html#/order-stage"),
-                            }
-                        };
-                        var attachment = card.ToAttachment();
-                        var reply = MessageFactory.Attachment(attachment);
-                        await innerDc.Context.SendActivityAsync(reply, cancellationToken);
-                        break;
+                        return await innerDc.ReplaceDialogAsync(InitialDialogId, cancellationToken);
                 }
             }
             return null;
@@ -236,9 +225,7 @@ namespace Playground.Dialogs
                     break;
             }
 
-            // Restart the main dialog with a different message the second time around
-            var promptMessage2 = "What else can I do for you?";
-            return await stepContext.ReplaceDialogAsync(InitialDialogId, promptMessage2, cancellationToken);
+            return await stepContext.ReplaceDialogAsync(InitialDialogId, cancellationToken);
         }
     }
 }
