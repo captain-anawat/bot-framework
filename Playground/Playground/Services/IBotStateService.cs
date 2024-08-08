@@ -1,7 +1,7 @@
 ﻿using Microsoft.Bot.Builder;
-using System.Threading.Tasks;
+using Playground.Models;
 using System.Threading;
-using Playground.Dialogs;
+using System.Threading.Tasks;
 
 namespace Playground.Services
 {
@@ -23,14 +23,5 @@ namespace Playground.Services
         {
             await _userState.SaveChangesAsync(turnContext, force, cancellationToken);
         }
-    }
-
-    public class UserDetails
-    {
-        public string RiderId { get; set; }
-        public bool IsLinkedAccount { get; set; }
-        public string UnfinishOrder { get; set; }
-        public string RequestOrder { get; set; }
-        public switchTo SwitchState { get; set; }
     }
 }

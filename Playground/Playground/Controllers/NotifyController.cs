@@ -1,10 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Configuration;
-using Playground.Dialogs;
+using Playground.Models;
 using Playground.Services;
 using System;
 using System.Collections.Concurrent;
@@ -155,23 +154,5 @@ namespace Playground.Controllers
                 await turnContext.SendActivityAsync(reply, cancellationToken);
             }
         }
-    }
-
-    public class OrderResponse
-    {
-        public string _id { get; set; }
-        public string OrderCode { get; set; }
-        public string ManaEndpoint { get; set; }
-        public ContactInfo Restaurant { get; set; }
-        public ContactInfo Customer { get; set; }
-    }
-    public class ContactInfo
-    {
-        public string _id { get; set; }
-        public string Name { get; set; }
-        public string Address { get; set; }
-        public string Latitude { get; set; }
-        public string Longitude { get; set; }
-        public string Remark { get; set; }
     }
 }

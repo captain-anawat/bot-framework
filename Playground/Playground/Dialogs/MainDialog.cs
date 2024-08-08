@@ -3,7 +3,6 @@ using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Choices;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
-using Playground.Controllers;
 using Playground.Models;
 using Playground.Services;
 using System;
@@ -13,21 +12,6 @@ using System.Threading.Tasks;
 
 namespace Playground.Dialogs
 {
-    public class EmployeeDetails
-    {
-        public string _id { get; set; }
-        public string DeliveryName { get; set; }
-        public string Address { get; set; }
-        public bool OnWorkStatus { get; set; }
-        public bool Suspended { get; set; }
-        public string PhoneNumber { get; set; }
-        public OrderResponse OrderRequest { get; set; }
-    }
-    public enum switchTo
-    {
-        Ready,
-        NotReady
-    }
     public class MainDialog : ComponentDialog
     {
         private string APIBaseUrl = "https://delivery-3rd-test-api.azurewebsites.net";
@@ -102,13 +86,7 @@ namespace Playground.Dialogs
                         var attachment = card.ToAttachment();
                         var reply = MessageFactory.Attachment(attachment);
                         await innerDc.Context.SendActivityAsync(reply, cancellationToken);
-                        return await innerDc.PromptAsync(nameof(ChoicePrompt), new PromptOptions
-                        {
-                            Choices = new[]
-                            {
-                                new Choice { Value = _contractCmd }
-                            }
-                        }, cancellationToken);
+                        break;
                 }
             }
             return null;
@@ -187,14 +165,14 @@ namespace Playground.Dialogs
                 switch (choic.Value)
                 {
                     case "เปิด":
-                        userDetails.SwitchState = switchTo.Ready;
+                        userDetails.SwitchState = SwitchTo.Ready;
                         await _botStateService.SaveChangesAsync(stepContext.Context);
                         messageText = "คุณต้องการเปิดรับงานใช่หรือไม่";
                         promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
                         return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
 
                     case "ปิด":
-                        userDetails.SwitchState = switchTo.NotReady;
+                        userDetails.SwitchState = SwitchTo.NotReady;
                         await _botStateService.SaveChangesAsync(stepContext.Context);
                         messageText = "คุณต้องการปิดรับงานใช่หรือไม่";
                         promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
@@ -235,13 +213,13 @@ namespace Playground.Dialogs
                     EmployeeDetails response;
                     switch (userDetails.SwitchState)
                     {
-                        case switchTo.Ready:
+                        case SwitchTo.Ready:
                             var turnOnApi = $"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOn/{userDetails.RiderId}";
                             response = await _restClientService.Put<EmployeeDetails>(turnOnApi, string.Empty);
                             _employeeDetails = response is not null ? response : _employeeDetails;
                             break;
 
-                        case switchTo.NotReady:
+                        case SwitchTo.NotReady:
                             var turnOffApi = $"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOff/{userDetails.RiderId}";
                             response = await _restClientService.Put<EmployeeDetails>(turnOffApi, string.Empty);
                             _employeeDetails = response is not null ? response : _employeeDetails;
