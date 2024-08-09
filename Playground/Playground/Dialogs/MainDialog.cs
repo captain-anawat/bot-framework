@@ -153,26 +153,29 @@ namespace Playground.Dialogs
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
             if (userDetails.IsLinkedAccount)
             {
-                var choic = (FoundChoice)stepContext.Result;
+                var message = stepContext.Result;
                 string messageText = string.Empty;
                 Activity promptMessage;
-                switch (choic.Value)
+                switch (message)
                 {
-                    case "เปิด":
+                    case FoundChoice choic when choic.Value is "เปิด":
+                    case string text when text is "เปิด":
                         userDetails.SwitchState = SwitchTo.Ready;
                         await _botStateService.SaveChangesAsync(stepContext.Context);
                         messageText = "คุณต้องการเปิดรับงานใช่หรือไม่";
                         promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
                         return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
 
-                    case "ปิด":
+                    case FoundChoice choic when choic.Value is "ปิด":
+                    case string text when text is "ปิด":
                         userDetails.SwitchState = SwitchTo.NotReady;
                         await _botStateService.SaveChangesAsync(stepContext.Context);
                         messageText = "คุณต้องการปิดรับงานใช่หรือไม่";
                         promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
                         return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
 
-                    case "ติดต่อ":
+                    case FoundChoice choic when choic.Value is "ติดต่อ":
+                    case string text when text is "ติดต่อ":
                         messageText = $"Admin {_employeeDetails.DeliveryName} deilvery{Environment.NewLine}{_employeeDetails.PhoneNumber}";
                         promptMessage = MessageFactory.Text(messageText, messageText);
                         await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);

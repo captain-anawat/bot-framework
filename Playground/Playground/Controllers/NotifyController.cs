@@ -85,8 +85,9 @@ namespace Playground.Controllers
                 userDetails.RequestOrder = string.Empty;
                 await _botStateService.SaveChangesAsync(turnContext);
 
+                var choices = new List<string> { "ปิด", "ติดต่อ" };
                 var messageText = "คุณกดรับไม่ทันเวลาที่กำหนด กรุณารองานถัดไป";
-                var reply = MessageFactory.Text(messageText, messageText);
+                var reply = MessageFactory.SuggestedActions(choices, messageText, null, InputHints.ExpectingInput);
                 await turnContext.SendActivityAsync(reply, cancellationToken);
             }
         }
@@ -108,8 +109,9 @@ namespace Playground.Controllers
                 userDetails.UnfinishOrder = string.Empty;
                 await _botStateService.SaveChangesAsync(turnContext);
 
+                var choices = new List<string> { "ปิด", "ติดต่อ" };
                 var messageText = "คำขอยกเลิกออเดอร์ได้รับการอนุมัติ";
-                var reply = MessageFactory.Text(messageText, messageText);
+                var reply = MessageFactory.SuggestedActions(choices, messageText, null, InputHints.ExpectingInput);
                 await turnContext.SendActivityAsync(reply, cancellationToken);
             }
         }
@@ -127,8 +129,10 @@ namespace Playground.Controllers
             {
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
                 if (userDetails.RiderId != riderId) return;
+
+                var choices = new List<string> { "ปิด", "ติดต่อ" };
                 var messageText = "คำขอยกเลิกออเดอร์ถูกปฎิเสธ";
-                var reply = MessageFactory.Text(messageText, messageText);
+                var reply = MessageFactory.SuggestedActions(choices, messageText, null, InputHints.ExpectingInput);
                 await turnContext.SendActivityAsync(reply, cancellationToken);
             }
         }
@@ -149,8 +153,9 @@ namespace Playground.Controllers
 
                 userDetails.UnfinishOrder = string.Empty;
                 await _botStateService.SaveChangesAsync(turnContext);
+                var choices = new List<string> { "ปิด", "ติดต่อ" };
                 var messageText = "คุณส่งออเดอร์เรียบร้อย";
-                var reply = MessageFactory.Text(messageText, messageText);
+                var reply = MessageFactory.SuggestedActions(choices, messageText, null, InputHints.ExpectingInput);
                 await turnContext.SendActivityAsync(reply, cancellationToken);
             }
         }
