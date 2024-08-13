@@ -32,7 +32,9 @@ namespace Playground.Bots
             {
                 if (member.Id != turnContext.Activity.Recipient.Id)
                 {
-                    await Dialog.RunAsync(turnContext, ConversationState.CreateProperty<DialogState>("DialogState"), cancellationToken);
+                        var response = MessageFactory.Text("Welcome to Bot Framework!");
+                        await turnContext.SendActivityAsync(response, cancellationToken);
+                        await Dialog.RunAsync(turnContext, ConversationState.CreateProperty<DialogState>("DialogState"), cancellationToken);
                 }
             }
         }

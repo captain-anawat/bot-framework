@@ -22,6 +22,7 @@ namespace Playground.Dialogs
         private readonly string _readyCmd = "เปิด";
         private readonly string _notReadyCmd = "ปิด";
         private readonly string _contractCmd = "ติดต่อ";
+        private readonly string _replaceDialogMessage = "What else can I do for you?";
 
         public MainDialog(LinkAccountDialog linkAccountDialog, IBotStateService botStateService, IRestClientService restClientService, ILogger<MainDialog> logger)
             : base(nameof(MainDialog))
@@ -62,12 +63,14 @@ namespace Playground.Dialogs
             if (innerDc.Context.Activity.Type == ActivityTypes.Message)
             {
                 var text = innerDc.Context.Activity.Text.ToLowerInvariant();
-
+                UserDetails userDetails = null;
                 switch (text)
                 {
                     case "รับออเดอร์":
-                        var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(innerDc.Context, () => new UserDetails(), cancellationToken);
-                        if (string.IsNullOrWhiteSpace(userDetails.RequestOrder)) break;
+                        userDetails = await _botStateService.UserDetailsAccessor.GetAsync(innerDc.Context, () => new UserDetails(), cancellationToken);
+                        if (string.IsNullOrWhiteSpace(userDetails.RequestOrder))
+                            // Restart the main dialog with a different message the second time around
+                            return await innerDc.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
 
                         var acceptOrderApi = $"{APIBaseUrl}/api/Rider/RiderAcceptOrder/{userDetails.RiderId}/{userDetails.RequestOrder}";
                         await _restClientService.Put(acceptOrderApi, string.Empty);
@@ -76,8 +79,14 @@ namespace Playground.Dialogs
                         await _botStateService.SaveChangesAsync(innerDc.Context);
 
                         // Restart the main dialog with a different message the second time around
-                        var promptMessage2 = "What else can I do for you?";
-                        return await innerDc.ReplaceDialogAsync(InitialDialogId, promptMessage2, cancellationToken);
+                        return await innerDc.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
+                    case "reset":
+                        userDetails = await _botStateService.UserDetailsAccessor.GetAsync(innerDc.Context, () => new UserDetails(), cancellationToken);
+                        userDetails.IsLinkedAccount = false;
+                        await _botStateService.SaveChangesAsync(innerDc.Context);
+
+                        // Restart the main dialog with a different message the second time around
+                        return await innerDc.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
                 }
             }
             return null;
@@ -234,8 +243,7 @@ namespace Playground.Dialogs
             }
 
             // Restart the main dialog with a different message the second time around
-            var promptMessage2 = "What else can I do for you?";
-            return await stepContext.ReplaceDialogAsync(InitialDialogId, promptMessage2, cancellationToken);
+            return await stepContext.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
         }
     }
 }
