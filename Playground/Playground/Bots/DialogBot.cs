@@ -33,9 +33,9 @@ namespace Playground.Bots
                 if (member.Id != turnContext.Activity.Recipient.Id)
                 {
                     var lineUserId = member.Id;
-                    var response = MessageFactory.Text($"Welcome lineUser ID: {lineUserId}");
-                        await turnContext.SendActivityAsync(response, cancellationToken);
-                        await Dialog.RunAsync(turnContext, ConversationState.CreateProperty<DialogState>("DialogState"), cancellationToken);
+                    //var response = MessageFactory.Text($"Welcome lineUser ID: {lineUserId}");
+                    //await turnContext.SendActivityAsync(response, cancellationToken);
+                    await Dialog.RunAsync(turnContext, ConversationState.CreateProperty<DialogState>("DialogState"), cancellationToken);
                 }
             }
         }
