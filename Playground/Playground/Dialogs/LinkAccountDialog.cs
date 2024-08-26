@@ -1,18 +1,21 @@
-﻿using Microsoft.Bot.Builder.Dialogs.Choices;
+﻿using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
-using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.Dialogs.Choices;
 using Microsoft.Bot.Schema;
 using Playground.Models;
+using Playground.Services;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Threading;
-using System;
+using System.Threading.Tasks;
 
 namespace Playground.Dialogs
 {
     public class LinkAccountDialog : ComponentDialog
     {
-        public LinkAccountDialog()
+        private readonly string APIBaseUrl = "https://delivery-3rd-test-api.azurewebsites.net";
+        private readonly IRestClientService _restClientService;
+
+        public LinkAccountDialog(IRestClientService restClientService)
             : base(nameof(LinkAccountDialog))
         {
             AddDialog(new TextPrompt(nameof(TextPrompt)));
@@ -27,14 +30,20 @@ namespace Playground.Dialogs
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), waterfallSteps));
 
             InitialDialogId = nameof(WaterfallDialog);
+            _restClientService = restClientService;
         }
 
         private async Task<DialogTurnResult> LinkingStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
+            var userId = stepContext.Context.Activity.From.Id;
+            var userName = stepContext.Context.Activity.From.Name;
+            var sessionRequest = $"{APIBaseUrl}/api/AdminWeb/LinkRequest/line/{userId}/{userName}";
+            var session = await _restClientService.Get<Session>(sessionRequest);
+
             var reply = MessageFactory.Attachment(new Attachment
             {
                 ContentType = "image/png",
-                ContentUrl = "https://5.imimg.com/data5/SELLER/Default/2022/10/RR/YR/YM/13168808/cu-qr-codes-chennai-website-developers--500x500.png",
+                ContentUrl = session.Url,
             });
 
             await stepContext.Context.SendActivityAsync(reply, cancellationToken);
@@ -43,8 +52,7 @@ namespace Playground.Dialogs
             {
                 Title = "กรุณาแสกน qr ผูกบัญชีกับมานะ เพื่อเข้าใช้งานระบบ",
                 Buttons = new List<CardAction> {
-                    new(ActionTypes.OpenUrl, title: "เปิดแอพ มานะ", value: "https://www.google.com/"),
-                    new(ActionTypes.ImBack, title: "แสกน qr", value: "แสกน qr")
+                    new(ActionTypes.OpenUrl, title: "เปิดแอพ มานะ", value: "https://www.google.com/")
                 }
             };
 
@@ -60,11 +68,7 @@ namespace Playground.Dialogs
             var details = (LinkAccountDetails)stepContext.Options;
 
             var choice = stepContext.Result;
-            details.Scanned = choice.ToString();
-
-            var messageText = $"คุณได้ทำการผูก line account กับ mana เรียบร้อยแล้ว{Environment.NewLine}ยินดีต้อนรับร้าน wib cafe";
-            var reply = MessageFactory.Text(messageText, messageText);
-            await stepContext.Context.SendActivityAsync(reply, cancellationToken);
+            details.Scanned = (bool)choice;
             return await stepContext.EndDialogAsync(details, cancellationToken);
         }
     }

@@ -215,9 +215,9 @@ namespace Playground.Dialogs
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
             switch (stepContext.Result)
             {
-                case LinkAccountDetails laResult:
+                case LinkAccountDetails laResult when laResult.Scanned:
                     userDetails.IsLinkedAccount = true;
-                    userDetails.RiderId = "637937263065127099";
+                    //userDetails.RiderId = "637937263065127099";
                     await _botStateService.SaveChangesAsync(stepContext.Context);
                     break;
 

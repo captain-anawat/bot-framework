@@ -34,6 +34,56 @@ namespace Playground.Controllers
             _appId = configuration["MicrosoftAppId"] ?? string.Empty;
         }
 
+        [HttpGet("{riderId}/{botUserId}/{isApprove}")]
+        public async Task<IActionResult> LinkAccount(string riderId, string botUserId, bool isApprove)
+        {
+            foreach (var conversationReference in _conversationReferences.Values)
+            {
+                await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, LinkAccountRequestBotCallback, default(CancellationToken));
+            }
+            return Ok();
+
+            async Task LinkAccountRequestBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
+            {
+                if (turnContext.Activity.From.Id != botUserId) return;
+                if (isApprove)
+                {
+                    var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
+                    userDetails.RiderId = riderId;
+                    await _botStateService.SaveChangesAsync(turnContext);
+
+                    var riderDetailsApi = $"{APIBaseUrl}/api/Rider/GetRiderInfo/{userDetails.RiderId}";
+                    var info = await _restClientService.Get<EmployeeDetails>(riderDetailsApi);
+
+                    var card = new HeroCard
+                    {
+                        Title = $"คุณ {info.Name} ได้ทำการผูก line account กับ mana เรียบร้อยแล้ว",
+                        Buttons = new List<CardAction> {
+                        new(ActionTypes.ImBack, title: "พร้อมเริ่มงาน", value: true)
+                    }
+                    };
+
+                    var attachment = card.ToAttachment();
+                    var reply = MessageFactory.Attachment(attachment);
+                    await turnContext.SendActivityAsync(reply, cancellationToken);
+                }
+                else
+                {
+                    var card = new HeroCard
+                    {
+                        Title = $"คุณถูกปฎิเสธการผูก line account กับ mana",
+                        Buttons = new List<CardAction> {
+                        new(ActionTypes.ImBack, title: "เริ่มผูกบัญชีใหม่", value: false)
+                    }
+                    };
+
+                    var attachment = card.ToAttachment();
+                    var reply = MessageFactory.Attachment(attachment);
+                    await turnContext.SendActivityAsync(reply, cancellationToken);
+                }
+            }
+        }
+
         [HttpGet("{riderId}")]
         public async Task<IActionResult> Ordering(string riderId)
         {

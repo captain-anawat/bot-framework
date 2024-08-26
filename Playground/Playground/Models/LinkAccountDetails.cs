@@ -2,6 +2,6 @@
 {
     public class LinkAccountDetails
     {
-        public string Scanned { get; set; }
+        public bool Scanned { get; set; }
     }
 }

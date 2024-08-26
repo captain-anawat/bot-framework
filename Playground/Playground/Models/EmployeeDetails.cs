@@ -3,6 +3,7 @@
     public class EmployeeDetails
     {
         public string _id { get; set; }
+        public string Name { get; set; }
         public string DeliveryName { get; set; }
         public string Address { get; set; }
         public bool OnWorkStatus { get; set; }
