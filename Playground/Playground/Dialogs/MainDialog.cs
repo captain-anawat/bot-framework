@@ -19,9 +19,6 @@ namespace Playground.Dialogs
         private readonly IBotStateService _botStateService;
         private readonly IRestClientService _restClientService;
         private readonly ILogger _logger;
-        private readonly string _readyCmd = "เปิด";
-        private readonly string _notReadyCmd = "ปิด";
-        private readonly string _contractCmd = "ติดต่อ";
         private readonly string _replaceDialogMessage = "restart dialog";
 
         public MainDialog(LinkAccountDialog linkAccountDialog, IBotStateService botStateService, IRestClientService restClientService, ILogger<MainDialog> logger)
@@ -118,6 +115,7 @@ namespace Playground.Dialogs
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
             if (!userDetails.IsLinkedAccount)
             {
+                await TryGetUserDetail();
                 return await stepContext.NextAsync(null, cancellationToken);
             }
             if (!string.IsNullOrWhiteSpace(userDetails.UnfinishOrder))
@@ -132,7 +130,7 @@ namespace Playground.Dialogs
                     Prompt = promptMessage,
                     Choices = new[]
                     {
-                        new Choice { Value = _contractCmd }
+                        new Choice { Value = "ติดต่อ" }
                     }
                 }, cancellationToken);
             }
@@ -152,11 +150,28 @@ namespace Playground.Dialogs
                     Choices = new[]
                     {
                         new Choice { Value = swtichTo(isReady) },
-                        new Choice { Value = _contractCmd }
+                        new Choice { Value = "ติดต่อ" }
                     }
                 }, cancellationToken);
             }
 
+            async Task TryGetUserDetail()
+            {
+                var userId = stepContext.Context.Activity.From.Id;
+                var apiStr = $"{APIBaseUrl}/api/Rider/GetRiderInfoWithChatBotId/{userId}";
+                var info = await _restClientService.Get<EmployeeDetails>(apiStr);
+                if (info is null) return;
+                var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
+                userDetails.IsLinkedAccount = true;
+                userDetails.RiderId = info._id;
+                apiStr = $"{APIBaseUrl}/api/Rider/GetUnfinishedOrder/{info._id}";
+                var order = await _restClientService.Get<OrderResponse>(apiStr);
+                if (order is not null)
+                {
+                    userDetails.UnfinishOrder = order._id;
+                }
+                await _botStateService.SaveChangesAsync(stepContext.Context);
+            }
             string swtichTo(bool isReady)
             {
                 return isReady ? "ปิด" : "เปิด";
