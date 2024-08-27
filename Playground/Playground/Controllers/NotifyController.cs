@@ -192,7 +192,7 @@ namespace Playground.Controllers
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
                 if (userDetails.RiderId != riderId) return;
 
-                var choices = new List<string> { "ปิด", "ติดต่อ" };
+                var choices = new List<string> { "ติดต่อ" };
                 var messageText = "คำขอยกเลิกออเดอร์ถูกปฎิเสธ";
                 var reply = MessageFactory.SuggestedActions(choices, messageText, null, InputHints.ExpectingInput);
                 await turnContext.SendActivityAsync(reply, cancellationToken);
