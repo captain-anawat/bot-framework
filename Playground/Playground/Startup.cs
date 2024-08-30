@@ -51,9 +51,6 @@ namespace Playground
             // Create the Concurrent dictionary.
             services.AddSingleton<ConcurrentDictionary<string, ConversationReference>>();
 
-            // Register the LinkAccountDialog.
-            services.AddSingleton<LinkAccountDialog>();
-
             // The MainDialog that will be run by the bot.
             services.AddSingleton<MainDialog>();
 

@@ -15,13 +15,15 @@ namespace Playground.Dialogs
     public class MainDialog : ComponentDialog
     {
         private string APIBaseUrl = "https://delivery-3rd-test-api.azurewebsites.net";
+        private string HistoryPageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/history-main";
+        private string ProfilePageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/profile-main";
         private EmployeeDetails _employeeDetails;
         private readonly IBotStateService _botStateService;
         private readonly IRestClientService _restClientService;
         private readonly ILogger _logger;
         private readonly string _replaceDialogMessage = "restart dialog";
 
-        public MainDialog(LinkAccountDialog linkAccountDialog, IBotStateService botStateService, IRestClientService restClientService, ILogger<MainDialog> logger)
+        public MainDialog(IBotStateService botStateService, IRestClientService restClientService, ILogger<MainDialog> logger)
             : base(nameof(MainDialog))
         {
             _botStateService = botStateService;
@@ -31,13 +33,12 @@ namespace Playground.Dialogs
             AddDialog(new TextPrompt(nameof(TextPrompt)));
             AddDialog(new ChoicePrompt(nameof(ChoicePrompt)));
             AddDialog(new ConfirmPrompt(nameof(ConfirmPrompt)));
-            AddDialog(linkAccountDialog);
 
             var waterfallSteps = new WaterfallStep[]
             {
-                Rider_IntroStepAsync,
-                Rider_ActStepAsync,
-                Rider_FinalStepAsync,
+                PrepareStepAsync,
+                StandardActStepAsync,
+                FinalStepAsync,
             };
 
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), waterfallSteps));
@@ -59,72 +60,111 @@ namespace Playground.Dialogs
         {
             if (innerDc.Context.Activity.Type == ActivityTypes.Message)
             {
-                UserDetails userDetails;
-                IMessageActivity messageActivity;
+                UserDetails userDetails = null;
+                IMessageActivity messageActivity = null;
+                bool isRestartDialog = true;
                 var text = innerDc.Context.Activity.Text.ToLowerInvariant();
                 switch (text)
                 {
+                    case "งานย้อนหลัง":
+                        messageActivity = createHeroCardWithUrl("ประวัติงานย้อนหลัง", HistoryPageUrl);
+                        break;
+                    case "โปรไฟล์":
+                        messageActivity = createHeroCardWithUrl("โปรไฟล์", ProfilePageUrl);
+                        break;
                     case "รับออเดอร์":
                         userDetails = await _botStateService.UserDetailsAccessor.GetAsync(innerDc.Context, () => new UserDetails(), cancellationToken);
                         if (string.IsNullOrWhiteSpace(userDetails.RequestOrder))
                         {
-                            var messageText = "หมดเวลารับออเดอร์ กรุณารอออเดอร์ถัดไป";
-                            var promptMessage = MessageFactory.Text(messageText, messageText);
-                            await innerDc.Context.SendActivityAsync(promptMessage, cancellationToken);
-
-                            // Restart the main dialog with a different message the second time around
-                            return await innerDc.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
+                            messageActivity = createMessageActivity("หมดเวลารับออเดอร์ กรุณารอออเดอร์ถัดไป");
+                            break;
                         }
-
                         var acceptOrderApi = $"{APIBaseUrl}/api/Rider/RiderAcceptOrder/{userDetails.RiderId}/{userDetails.RequestOrder}";
                         await _restClientService.Put(acceptOrderApi, string.Empty);
                         userDetails.UnfinishOrder = userDetails.RequestOrder;
                         userDetails.RequestOrder = string.Empty;
                         await _botStateService.SaveChangesAsync(innerDc.Context);
-
-                        // Restart the main dialog with a different message the second time around
-                        return await innerDc.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
-
-                    case "งานย้อนหลัง":
-                        messageActivity = getHeroCardWithUrl("ประวัติงานย้อนหลัง", "https://devster-delivery-test.onmana.space/apprider/index.html#/history-main");
-                        await innerDc.Context.SendActivityAsync(messageActivity, cancellationToken);
-
-                        // Restart the main dialog with a different message the second time around
-                        return await innerDc.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
-
-                    case "โปรไฟล์":
-                        messageActivity = getHeroCardWithUrl("โปรไฟล์", "https://devster-delivery-test.onmana.space/apprider/index.html#/profile-main");
-                        await innerDc.Context.SendActivityAsync(messageActivity, cancellationToken);
-
-                        // Restart the main dialog with a different message the second time around
-                        return await innerDc.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
-
+                        break;
                     case "reset":
                         userDetails = await _botStateService.UserDetailsAccessor.GetAsync(innerDc.Context, () => new UserDetails(), cancellationToken);
                         userDetails.IsLinkedAccount = false;
                         userDetails.RiderId = null;
                         await _botStateService.SaveChangesAsync(innerDc.Context);
+                        break;
+                    default:
+                        isRestartDialog = false;
+                        break;
+                }
 
-                        // Restart the main dialog with a different message the second time around
-                        return await innerDc.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
+                if (messageActivity is not null)
+                {
+                    await innerDc.Context.SendActivityAsync(messageActivity, cancellationToken);
+                }
+                if (isRestartDialog)
+                {
+                    // Restart the main dialog with a different message the second time around
+                    return await innerDc.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
                 }
             }
             return null;
         }
-        private async Task<DialogTurnResult> Rider_IntroStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> PrepareStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
             if (!userDetails.IsLinkedAccount)
             {
                 await TryGetUserDetail();
+                if (!userDetails.IsLinkedAccount)
+                {
+                    var userId = stepContext.Context.Activity.From.Id;
+                    var userName = stepContext.Context.Activity.From.Name;
+                    var sessionRequest = $"{APIBaseUrl}/api/AdminWeb/LinkRequest/line/{userId}/{userName}";
+                    var session = await _restClientService.Get<Session>(sessionRequest);
+
+                    var reply = MessageFactory.Attachment(new Attachment
+                    {
+                        ContentType = "image/png",
+                        ContentUrl = session.Url,
+                    });
+
+                    await stepContext.Context.SendActivityAsync(reply, cancellationToken);
+
+                    var card = new HeroCard
+                    {
+                        Title = "กรุณาแสกน qr ผูกบัญชีกับมานะ เพื่อเข้าใช้งานระบบ",
+                        Buttons = new List<CardAction> {
+                            new(ActionTypes.OpenUrl, title: "เปิดแอพ มานะ", value: "https://www.google.com/")
+                        }
+                    };
+
+                    var promptOptions = new PromptOptions
+                    {
+                        Prompt = (Activity)MessageFactory.Attachment(card.ToAttachment()),
+                        Style = ListStyle.HeroCard,
+                    };
+                    return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
+                }
                 return await stepContext.NextAsync(null, cancellationToken);
             }
             if (!string.IsNullOrWhiteSpace(userDetails.UnfinishOrder))
             {
-                var reply = getHeroCardWithUrl("ข้อมูลออเดอร์หรืออัพเดทสถานะออเดอร์", "https://devster-delivery-test.onmana.space/apprider/index.html#/order-stage");
+                var reply = createHeroCardWithUrl("ข้อมูลออเดอร์หรืออัพเดทสถานะออเดอร์", "https://devster-delivery-test.onmana.space/apprider/index.html#/order-stage");
                 await stepContext.Context.SendActivityAsync(reply, cancellationToken);
 
                 var messageText = $"สถานะไรเดอร์ กำลังวิ่งงาน";
+                var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
+                return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
+                {
+                    Prompt = promptMessage,
+                    Choices = new[]
+                    {
+                        new Choice { Value = "ติดต่อ" }
+                    }
+                }, cancellationToken);
+            }
+            if (userDetails.RiderId.StartsWith("mrid"))
+            {
+                var messageText = $"คุณยังไม่ได้เป็นไรเดอร์ของเดริเวอรี่";
                 var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
                 return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
                 {
@@ -182,61 +222,47 @@ namespace Playground.Dialogs
                 return isReady ? "เปิด" : "ปิด";
             }
         }
-        private async Task<DialogTurnResult> Rider_ActStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> StandardActStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
-            if (userDetails.IsLinkedAccount)
+            var message = (FoundChoice)stepContext.Result;
+            string messageText = string.Empty;
+            Activity promptMessage;
+            switch (message.Value)
             {
-                var message = (FoundChoice)stepContext.Result;
-                string messageText = string.Empty;
-                Activity promptMessage;
-                switch (message.Value)
-                {
-                    case "เปิด":
-                        userDetails.SwitchState = SwitchTo.Ready;
-                        await _botStateService.SaveChangesAsync(stepContext.Context);
-                        messageText = "คุณต้องการเปิดรับงานใช่หรือไม่";
-                        promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
-                        return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+                case "เปิด":
+                    userDetails.SwitchState = SwitchTo.Ready;
+                    await _botStateService.SaveChangesAsync(stepContext.Context);
+                    messageText = "คุณต้องการเปิดรับงานใช่หรือไม่";
+                    promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
+                    return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
 
-                    case "ปิด":
-                        userDetails.SwitchState = SwitchTo.NotReady;
-                        await _botStateService.SaveChangesAsync(stepContext.Context);
-                        messageText = "คุณต้องการปิดรับงานใช่หรือไม่";
-                        promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
-                        return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+                case "ปิด":
+                    userDetails.SwitchState = SwitchTo.NotReady;
+                    await _botStateService.SaveChangesAsync(stepContext.Context);
+                    messageText = "คุณต้องการปิดรับงานใช่หรือไม่";
+                    promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
+                    return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
 
-                    case "ติดต่อ":
-                        messageText = $"Admin {_employeeDetails.DeliveryName} deilvery{Environment.NewLine}{_employeeDetails.PhoneNumber}";
-                        promptMessage = MessageFactory.Text(messageText, messageText);
-                        await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
-                        break;
+                case "ติดต่อ":
+                    messageText = $"Admin {_employeeDetails.DeliveryName} deilvery{Environment.NewLine}{_employeeDetails.PhoneNumber}";
+                    promptMessage = MessageFactory.Text(messageText, messageText);
+                    await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
+                    break;
 
-                    default:
-                        messageText = "ระบบไม่เข้าใจคำขอของคุณ";
-                        promptMessage = MessageFactory.Text(messageText, messageText);
-                        await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
-                        break;
-                }
-            }
-            else
-            {
-                var linkAccountDetails = new LinkAccountDetails();
-                return await stepContext.BeginDialogAsync(nameof(LinkAccountDialog), linkAccountDetails, cancellationToken);
+                default:
+                    messageText = "ระบบไม่เข้าใจคำขอของคุณ";
+                    promptMessage = MessageFactory.Text(messageText, messageText);
+                    await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
+                    break;
             }
             return await stepContext.NextAsync(null, cancellationToken);
         }
-        private async Task<DialogTurnResult> Rider_FinalStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> FinalStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
             switch (stepContext.Result)
             {
-                case LinkAccountDetails laResult when laResult.Scanned:
-                    userDetails.IsLinkedAccount = true;
-                    //userDetails.RiderId = "637937263065127099";
-                    await _botStateService.SaveChangesAsync(stepContext.Context);
-                    break;
-
                 case bool srResult when srResult:
                     EmployeeDetails response;
                     switch (userDetails.SwitchState)
@@ -266,7 +292,7 @@ namespace Playground.Dialogs
             // Restart the main dialog with a different message the second time around
             return await stepContext.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
         }
-        private IMessageActivity getHeroCardWithUrl(string title, string url)
+        private IMessageActivity createHeroCardWithUrl(string title, string url)
         {
             var card = new HeroCard
             {
@@ -280,5 +306,8 @@ namespace Playground.Dialogs
             var attachment = card.ToAttachment();
             return MessageFactory.Attachment(attachment);
         }
+
+        private IMessageActivity createMessageActivity(string message)
+            => MessageFactory.Text(message, message, InputHints.ExpectingInput);
     }
 }
