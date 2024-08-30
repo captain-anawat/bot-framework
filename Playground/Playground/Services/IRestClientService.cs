@@ -22,7 +22,7 @@ namespace Playground.Services
             if (rsp.StatusCode == 200)
                 return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
 
-            return default(T);
+            return default;
         }
 
         public async Task<T> Post<T>(string endpointUrl, string requestBody)
@@ -32,7 +32,7 @@ namespace Playground.Services
             if (rsp.StatusCode == 200)
                 return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
 
-            return default(T);
+            return default;
         }
 
         public async Task Put(string endpointUrl, string requestBody)
@@ -47,7 +47,7 @@ namespace Playground.Services
             if (rsp.StatusCode == 200)
                 return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
 
-            return default(T);
+            return default;
         }
     }
 }

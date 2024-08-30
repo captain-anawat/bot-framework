@@ -14,9 +14,10 @@ namespace Playground.Dialogs
 {
     public class MainDialog : ComponentDialog
     {
-        private string APIBaseUrl = "https://delivery-3rd-test-api.azurewebsites.net";
-        private string HistoryPageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/history-main";
-        private string ProfilePageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/profile-main";
+        private readonly string APIBaseUrl = "https://delivery-3rd-test-api.azurewebsites.net";
+        private readonly string HistoryPageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/history-main";
+        private readonly string ProfilePageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/profile-main";
+        private readonly string OrderStagePageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/order-stage";
         private EmployeeDetails _employeeDetails;
         private readonly IBotStateService _botStateService;
         private readonly IRestClientService _restClientService;
@@ -67,16 +68,17 @@ namespace Playground.Dialogs
                 switch (text)
                 {
                     case "งานย้อนหลัง":
-                        messageActivity = createHeroCardWithUrl("ประวัติงานย้อนหลัง", HistoryPageUrl);
+                        messageActivity = CreateHeroCardWithUrl("ประวัติงานย้อนหลัง", HistoryPageUrl);
                         break;
                     case "โปรไฟล์":
-                        messageActivity = createHeroCardWithUrl("โปรไฟล์", ProfilePageUrl);
+                        messageActivity = CreateHeroCardWithUrl("โปรไฟล์", ProfilePageUrl);
                         break;
                     case "รับออเดอร์":
                         userDetails = await _botStateService.UserDetailsAccessor.GetAsync(innerDc.Context, () => new UserDetails(), cancellationToken);
                         if (string.IsNullOrWhiteSpace(userDetails.RequestOrder))
                         {
-                            messageActivity = createMessageActivity("หมดเวลารับออเดอร์ กรุณารอออเดอร์ถัดไป");
+                            var messageText = "หมดเวลารับออเดอร์ กรุณารอออเดอร์ถัดไป";
+                            messageActivity = MessageFactory.Text(messageText, messageText);
                             break;
                         }
                         var acceptOrderApi = $"{APIBaseUrl}/api/Rider/RiderAcceptOrder/{userDetails.RiderId}/{userDetails.RequestOrder}";
@@ -148,7 +150,7 @@ namespace Playground.Dialogs
             }
             if (!string.IsNullOrWhiteSpace(userDetails.UnfinishOrder))
             {
-                var reply = createHeroCardWithUrl("ข้อมูลออเดอร์หรืออัพเดทสถานะออเดอร์", "https://devster-delivery-test.onmana.space/apprider/index.html#/order-stage");
+                var reply = CreateHeroCardWithUrl("ข้อมูลออเดอร์หรืออัพเดทสถานะออเดอร์", OrderStagePageUrl);
                 await stepContext.Context.SendActivityAsync(reply, cancellationToken);
 
                 var messageText = $"สถานะไรเดอร์ กำลังวิ่งงาน";
@@ -292,7 +294,8 @@ namespace Playground.Dialogs
             // Restart the main dialog with a different message the second time around
             return await stepContext.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
         }
-        private IMessageActivity createHeroCardWithUrl(string title, string url)
+
+        private Activity CreateHeroCardWithUrl(string title, string url)
         {
             var card = new HeroCard
             {
@@ -303,11 +306,7 @@ namespace Playground.Dialogs
                     new(ActionTypes.OpenUrl, title: "เปิดลิงคิ์", value: url),
                 }
             };
-            var attachment = card.ToAttachment();
-            return MessageFactory.Attachment(attachment);
+            return (Activity)MessageFactory.Attachment(card.ToAttachment());
         }
-
-        private IMessageActivity createMessageActivity(string message)
-            => MessageFactory.Text(message, message, InputHints.ExpectingInput);
     }
 }

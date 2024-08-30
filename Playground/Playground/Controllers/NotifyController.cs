@@ -114,16 +114,6 @@ namespace Playground.Controllers
                     }
                 };
 
-                //var card = new HeroCard
-                //{
-                //    Title = $"ออเดอร์ {request.OrderRequest.OrderCode}",
-                //    Subtitle = $"ร้าน {request.OrderRequest.Restaurant.Name}{Environment.NewLine}{request.OrderRequest.Restaurant.Address}{Environment.NewLine}ผู้รับ {request.OrderRequest.Customer.Name}{Environment.NewLine}{request.OrderRequest.Customer.Address}{Environment.NewLine}{request.OrderRequest.Customer.Remark}",
-                //    //Text = "รับงานภายใน 30 วินาที",
-                //    Buttons = new List<CardAction> {
-                //        new(ActionTypes.OpenUrl, title: "ดูออเดอร์", value: "https://devster-delivery-test.onmana.space/apprider/index.html#/order-stage")
-                //    }
-                //};
-
                 var attachment = card.ToAttachment();
                 var reply = MessageFactory.Attachment(attachment);
                 await turnContext.SendActivityAsync(reply, cancellationToken);
