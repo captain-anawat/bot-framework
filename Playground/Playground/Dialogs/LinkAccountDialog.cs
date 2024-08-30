@@ -14,8 +14,9 @@ namespace Playground.Dialogs
     {
         private readonly string APIBaseUrl = "https://delivery-3rd-test-api.azurewebsites.net";
         private readonly IRestClientService _restClientService;
+        private readonly IBotStateService _botStateService;
 
-        public LinkAccountDialog(IRestClientService restClientService)
+        public LinkAccountDialog(IRestClientService restClientService, IBotStateService botStateService)
             : base(nameof(LinkAccountDialog))
         {
             AddDialog(new TextPrompt(nameof(TextPrompt)));
@@ -31,6 +32,7 @@ namespace Playground.Dialogs
 
             InitialDialogId = nameof(WaterfallDialog);
             _restClientService = restClientService;
+            _botStateService = botStateService;
         }
 
         private async Task<DialogTurnResult> LinkingStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -67,8 +69,8 @@ namespace Playground.Dialogs
         {
             var details = (LinkAccountDetails)stepContext.Options;
 
-            var choice = stepContext.Result;
-            details.Scanned = (bool)choice;
+            var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
+            details.Scanned = string.IsNullOrWhiteSpace(userDetails.RiderId) is false;
             return await stepContext.EndDialogAsync(details, cancellationToken);
         }
     }
