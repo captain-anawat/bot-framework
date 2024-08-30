@@ -102,6 +102,7 @@ namespace Playground.Dialogs
                     case "reset":
                         userDetails = await _botStateService.UserDetailsAccessor.GetAsync(innerDc.Context, () => new UserDetails(), cancellationToken);
                         userDetails.IsLinkedAccount = false;
+                        userDetails.RiderId = null;
                         await _botStateService.SaveChangesAsync(innerDc.Context);
 
                         // Restart the main dialog with a different message the second time around
