@@ -61,20 +61,19 @@ namespace Playground.Dialogs
         {
             if (innerDc.Context.Activity.Type == ActivityTypes.Message)
             {
-                UserDetails userDetails = null;
+                UserDetails userDetails = await _botStateService.UserDetailsAccessor.GetAsync(innerDc.Context, () => new UserDetails(), cancellationToken);
                 IMessageActivity messageActivity = null;
                 bool isRestartDialog = true;
                 var text = innerDc.Context.Activity.Text.ToLowerInvariant();
                 switch (text)
                 {
-                    case "งานย้อนหลัง":
+                    case "งานย้อนหลัง" when userDetails.IsLinkedAccount:
                         messageActivity = CreateHeroCardWithUrl("ประวัติงานย้อนหลัง", HistoryPageUrl);
                         break;
-                    case "โปรไฟล์":
+                    case "โปรไฟล์" when userDetails.IsLinkedAccount:
                         messageActivity = CreateHeroCardWithUrl("โปรไฟล์", ProfilePageUrl);
                         break;
-                    case "รับออเดอร์":
-                        userDetails = await _botStateService.UserDetailsAccessor.GetAsync(innerDc.Context, () => new UserDetails(), cancellationToken);
+                    case "รับออเดอร์" when userDetails.IsLinkedAccount:
                         if (string.IsNullOrWhiteSpace(userDetails.RequestOrder))
                         {
                             var messageText = "หมดเวลารับออเดอร์ กรุณารอออเดอร์ถัดไป";
@@ -88,7 +87,6 @@ namespace Playground.Dialogs
                         await _botStateService.SaveChangesAsync(innerDc.Context);
                         break;
                     case "reset":
-                        userDetails = await _botStateService.UserDetailsAccessor.GetAsync(innerDc.Context, () => new UserDetails(), cancellationToken);
                         userDetails.IsLinkedAccount = false;
                         userDetails.RiderId = null;
                         await _botStateService.SaveChangesAsync(innerDc.Context);
