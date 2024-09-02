@@ -18,20 +18,20 @@ namespace Playground.Dialogs
         private readonly string HistoryPageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/history-main";
         private readonly string ProfilePageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/profile-main";
         private readonly string OrderStagePageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/order-stage";
-        private readonly IList<Choice> orderingCmd = new[]
-                    {
+        private readonly IList<Choice> orderingCmd =
+                    [
                         new Choice { Value = "ติดต่อ" }
-                    };
-        private readonly IList<Choice> standbyCmd = new[]
-                    {
+                    ];
+        private readonly IList<Choice> standbyCmd =
+                    [
                         new Choice { Value = "ปิด" },
                         new Choice { Value = "ติดต่อ" }
-                    };
-        private readonly IList<Choice> offShiftCmd = new[]
-                    {
+                    ];
+        private readonly IList<Choice> offShiftCmd =
+                    [
                         new Choice { Value = "เปิด" },
                         new Choice { Value = "ติดต่อ" }
-                    };
+                    ];
         private readonly IBotStateService _botStateService;
         private readonly IRestClientService _restClientService;
         private readonly ILogger _logger;

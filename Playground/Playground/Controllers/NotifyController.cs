@@ -23,8 +23,8 @@ namespace Playground.Controllers
         private readonly IBotFrameworkHttpAdapter _adapter;
         private readonly string _appId;
         private readonly ConcurrentDictionary<string, ConversationReference> _conversationReferences;
-        private readonly IList<string> orderingCmd = new List<string> { "ติดต่อ" };
-        private readonly IList<string> standbyCmd = new List<string> { "ปิด", "ติดต่อ" };
+        private readonly IList<string> orderingCmd = ["ติดต่อ"];
+        private readonly IList<string> standbyCmd = ["ปิด", "ติดต่อ"];
 
         public NotifyController(IBotStateService botStateService, IRestClientService restClientService, IBotFrameworkHttpAdapter adapter, IConfiguration configuration, ConcurrentDictionary<string, ConversationReference> conversationReferences)
         {
@@ -123,10 +123,10 @@ namespace Playground.Controllers
             {
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
                 if (userDetails.RiderId != riderId) return;
+
                 var riderDetailsApi = $"{APIBaseUrl}/api/Rider/GetRiderInfo/{userDetails.RiderId}";
                 var request = await _restClientService.Get<EmployeeDetails>(riderDetailsApi);
-                if (request.OrderRequest == null)
-                    return;
+                if (request.OrderRequest == null) return;
 
                 userDetails.RequestOrder = request.OrderRequest._id;
                 await _botStateService.SaveChangesAsync(turnContext);
