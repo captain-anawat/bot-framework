@@ -18,7 +18,20 @@ namespace Playground.Dialogs
         private readonly string HistoryPageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/history-main";
         private readonly string ProfilePageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/profile-main";
         private readonly string OrderStagePageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/order-stage";
-        private EmployeeDetails _employeeDetails;
+        private readonly IList<Choice> orderingCmd = new[]
+                    {
+                        new Choice { Value = "ติดต่อ" }
+                    };
+        private readonly IList<Choice> standbyCmd = new[]
+                    {
+                        new Choice { Value = "ปิด" },
+                        new Choice { Value = "ติดต่อ" }
+                    };
+        private readonly IList<Choice> offShiftCmd = new[]
+                    {
+                        new Choice { Value = "เปิด" },
+                        new Choice { Value = "ติดต่อ" }
+                    };
         private readonly IBotStateService _botStateService;
         private readonly IRestClientService _restClientService;
         private readonly ILogger _logger;
@@ -156,10 +169,7 @@ namespace Playground.Dialogs
                 return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
                 {
                     Prompt = promptMessage,
-                    Choices = new[]
-                    {
-                        new Choice { Value = "ติดต่อ" }
-                    }
+                    Choices = orderingCmd
                 }, cancellationToken);
             }
             if (userDetails.RiderId.StartsWith("mrid"))
@@ -169,30 +179,18 @@ namespace Playground.Dialogs
                 return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
                 {
                     Prompt = promptMessage,
-                    Choices = new[]
-                    {
-                        new Choice { Value = "ติดต่อ" }
-                    }
+                    Choices = orderingCmd
                 }, cancellationToken);
             }
             else
             {
-                if (_employeeDetails is null)
-                {
-                    var riderDetailsApi = $"{APIBaseUrl}/api/Rider/GetRiderInfo/{userDetails.RiderId}";
-                    _employeeDetails = await _restClientService.Get<EmployeeDetails>(riderDetailsApi);
-                }
-                var isReady = _employeeDetails.OnWorkStatus;
-                var messageText = $"สถานะไรเดอร์ {riderStatus(isReady)}";
+                var riderStatus = userDetails.WorkStatus.Value ? "เปิด" : "ปิด";
+                var messageText = $"สถานะไรเดอร์ {riderStatus}";
                 var promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
                 return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
                 {
                     Prompt = promptMessage,
-                    Choices = new[]
-                    {
-                        new Choice { Value = swtichTo(isReady) },
-                        new Choice { Value = "ติดต่อ" }
-                    }
+                    Choices = userDetails.WorkStatus.Value ? standbyCmd : offShiftCmd
                 }, cancellationToken);
             }
 
@@ -205,6 +203,10 @@ namespace Playground.Dialogs
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
                 userDetails.IsLinkedAccount = true;
                 userDetails.RiderId = info._id;
+                userDetails.UserName = info.Name;
+                userDetails.DeliveryName = info.DeliveryName;
+                userDetails.PhoneNumber = info.PhoneNumber;
+                userDetails.WorkStatus = info.OnWorkStatus;
                 apiStr = $"{APIBaseUrl}/api/Rider/GetUnfinishedOrder/{info._id}";
                 var order = await _restClientService.Get<OrderResponse>(apiStr);
                 if (order is not null)
@@ -213,43 +215,36 @@ namespace Playground.Dialogs
                 }
                 await _botStateService.SaveChangesAsync(stepContext.Context);
             }
-            string swtichTo(bool isReady)
-            {
-                return isReady ? "ปิด" : "เปิด";
-            }
-            string riderStatus(bool isReady)
-            {
-                return isReady ? "เปิด" : "ปิด";
-            }
         }
         private async Task<DialogTurnResult> StandardActStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
-            var message = (FoundChoice)stepContext.Result;
-            string messageText = string.Empty;
+            string messageText;
             Activity promptMessage;
-            switch (message.Value)
+            switch (stepContext.Result)
             {
-                case "เปิด":
-                    userDetails.SwitchState = SwitchTo.Ready;
-                    await _botStateService.SaveChangesAsync(stepContext.Context);
-                    messageText = "คุณต้องการเปิดรับงานใช่หรือไม่";
-                    promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
-                    return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
-
-                case "ปิด":
-                    userDetails.SwitchState = SwitchTo.NotReady;
-                    await _botStateService.SaveChangesAsync(stepContext.Context);
-                    messageText = "คุณต้องการปิดรับงานใช่หรือไม่";
-                    promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
-                    return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
-
-                case "ติดต่อ":
-                    messageText = $"Admin {_employeeDetails.DeliveryName} deilvery{Environment.NewLine}{_employeeDetails.PhoneNumber}";
-                    promptMessage = MessageFactory.Text(messageText, messageText);
-                    await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
+                case FoundChoice choice:
+                    switch (choice.Value)
+                    {
+                        case "เปิด":
+                            userDetails.SwitchState = SwitchTo.Ready;
+                            await _botStateService.SaveChangesAsync(stepContext.Context);
+                            messageText = "คุณต้องการเปิดรับงานใช่หรือไม่";
+                            promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
+                            return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+                        case "ปิด":
+                            userDetails.SwitchState = SwitchTo.NotReady;
+                            await _botStateService.SaveChangesAsync(stepContext.Context);
+                            messageText = "คุณต้องการปิดรับงานใช่หรือไม่";
+                            promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
+                            return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+                        case "ติดต่อ":
+                            messageText = $"Admin {userDetails.DeliveryName} deilvery{Environment.NewLine}{userDetails.PhoneNumber}";
+                            promptMessage = MessageFactory.Text(messageText, messageText);
+                            await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
+                            break;
+                    }
                     break;
-
                 default:
                     messageText = "ระบบไม่เข้าใจคำขอของคุณ";
                     promptMessage = MessageFactory.Text(messageText, messageText);
@@ -263,29 +258,29 @@ namespace Playground.Dialogs
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
             switch (stepContext.Result)
             {
-                case bool srResult when srResult:
+                case bool confirmResult when confirmResult:
                     EmployeeDetails response;
                     switch (userDetails.SwitchState)
                     {
                         case SwitchTo.Ready:
                             var turnOnApi = $"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOn/{userDetails.RiderId}";
                             response = await _restClientService.Put<EmployeeDetails>(turnOnApi, string.Empty);
-                            _employeeDetails = response is not null ? response : _employeeDetails;
+                            userDetails.WorkStatus = response is not null ? response.OnWorkStatus : userDetails.WorkStatus;
+                            userDetails.SwitchState = SwitchTo.None;
+                            await _botStateService.SaveChangesAsync(stepContext.Context);
                             break;
-
                         case SwitchTo.NotReady:
                             var turnOffApi = $"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOff/{userDetails.RiderId}";
                             response = await _restClientService.Put<EmployeeDetails>(turnOffApi, string.Empty);
-                            _employeeDetails = response is not null ? response : _employeeDetails;
-                            break;
-
-                        default:
-                            _employeeDetails = null;
+                            userDetails.WorkStatus = response is not null ? response.OnWorkStatus : userDetails.WorkStatus;
+                            userDetails.SwitchState = SwitchTo.None;
+                            await _botStateService.SaveChangesAsync(stepContext.Context);
                             break;
                     }
                     break;
-
-                default:
+                case bool confirmResult when confirmResult is false:
+                    userDetails.SwitchState = SwitchTo.None;
+                    await _botStateService.SaveChangesAsync(stepContext.Context);
                     break;
             }
 

@@ -3,6 +3,7 @@
     public enum SwitchTo
     {
         Ready,
-        NotReady
+        NotReady,
+        None
     }
 }

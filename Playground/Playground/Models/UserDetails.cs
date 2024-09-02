@@ -2,8 +2,12 @@
 {
     public class UserDetails
     {
-        public string RiderId { get; set; }
         public bool IsLinkedAccount { get; set; }
+        public string RiderId { get; set; }
+        public string UserName { get; set; }
+        public string DeliveryName { get; set; }
+        public string PhoneNumber { get; set; }
+        public bool? WorkStatus { get; set; }
         public string UnfinishOrder { get; set; }
         public string RequestOrder { get; set; }
         public SwitchTo SwitchState { get; set; }
