@@ -126,7 +126,7 @@ namespace Playground.Dialogs
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
             if (!userDetails.IsLinkedAccount)
             {
-                await TryGetUserDetail();
+                await TryGetUserDetail(userDetails);
                 if (!userDetails.IsLinkedAccount)
                 {
                     var userId = stepContext.Context.Activity.From.Id;
@@ -194,13 +194,13 @@ namespace Playground.Dialogs
                 }, cancellationToken);
             }
 
-            async Task TryGetUserDetail()
+            async Task TryGetUserDetail(UserDetails userDetails)
             {
                 var userId = stepContext.Context.Activity.From.Id;
                 var apiStr = $"{APIBaseUrl}/api/Rider/GetRiderInfoWithChatBotId/{userId}";
                 var info = await _restClientService.Get<EmployeeDetails>(apiStr);
                 if (info is null) return;
-                var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
+
                 userDetails.IsLinkedAccount = true;
                 userDetails.RiderId = info._id;
                 userDetails.UserName = info.Name;
