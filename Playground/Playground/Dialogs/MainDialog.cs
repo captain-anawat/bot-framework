@@ -142,17 +142,10 @@ namespace Playground.Dialogs
 
                     await stepContext.Context.SendActivityAsync(reply, cancellationToken);
 
-                    var card = new HeroCard
-                    {
-                        Title = "กรุณาแสกน qr ผูกบัญชีกับมานะ เพื่อเข้าใช้งานระบบ",
-                        Buttons = new List<CardAction> {
-                            new(ActionTypes.OpenUrl, title: "เปิดแอพ มานะ", value: "https://www.google.com/")
-                        }
-                    };
-
+                    var deeplinkUrl = "https://www.google.com/";
                     var promptOptions = new PromptOptions
                     {
-                        Prompt = (Activity)MessageFactory.Attachment(card.ToAttachment()),
+                        Prompt = CreateHeroCardWithUrl("กรุณาแสกน qr ผูกบัญชีกับมานะ เพื่อเข้าใช้งานระบบ", deeplinkUrl),
                         Style = ListStyle.HeroCard,
                     };
                     return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
@@ -293,10 +286,9 @@ namespace Playground.Dialogs
             var card = new HeroCard
             {
                 Title = title,
-                Subtitle = $"ดูผ่านจากลิงค์นี้ {url}",
                 Buttons = new List<CardAction>
                 {
-                    new(ActionTypes.OpenUrl, title: "เปิดลิงคิ์", value: url),
+                    new(ActionTypes.OpenUrl, title: "เปิด", value: url),
                 }
             };
             return (Activity)MessageFactory.Attachment(card.ToAttachment());
