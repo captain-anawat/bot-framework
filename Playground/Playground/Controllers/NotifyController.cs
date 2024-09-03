@@ -65,7 +65,7 @@ namespace Playground.Controllers
                         {
                             Title = $"คุณ {userName} ยังไม่ได้เข้าร่วมกับ delivery นี้",
                             Buttons = new List<CardAction> {
-                                new(ActionTypes.ImBack, title: "ยืนยัน", value: "ยืนยัน")
+                                new(ActionTypes.ImBack, title: "ตกลง", value: "ตกลง")
                             }
                         };
 
@@ -89,7 +89,7 @@ namespace Playground.Controllers
                         {
                             Title = $"คุณ {info.Name} ได้ทำการผูก line account กับ mana เรียบร้อยแล้ว",
                             Buttons = new List<CardAction> {
-                                new(ActionTypes.ImBack, title: "พร้อมเริ่มงาน", value: true)
+                                new(ActionTypes.ImBack, title: "พร้อมเริ่มงาน", value: "พร้อมเริ่มงาน")
                             }
                         };
 
@@ -141,7 +141,7 @@ namespace Playground.Controllers
                     Subtitle = $"ร้าน {request.OrderRequest.Restaurant.Name}{Environment.NewLine}{request.OrderRequest.Restaurant.Address}{Environment.NewLine}ผู้รับ {request.OrderRequest.Customer.Name}{Environment.NewLine}{request.OrderRequest.Customer.Address}{Environment.NewLine}{request.OrderRequest.Customer.Remark}",
                     Text = "รับงานภายใน 30 วินาที",
                     Buttons = new List<CardAction> {
-                        new(ActionTypes.ImBack, title: "รับออเดอร์", value: $"รับออเดอร์")
+                        new(ActionTypes.ImBack, title: "รับออเดอร์", value: "รับออเดอร์")
                     }
                 };
 

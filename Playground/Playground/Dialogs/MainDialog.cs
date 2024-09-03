@@ -105,6 +105,10 @@ namespace Playground.Dialogs
                         await _restClientService.Put(resetApi, string.Empty);
                         break;
 
+                    case "ตกลง":
+                    case "พร้อมเริ่มงาน":
+                        break;
+
                     default:
                         isRestartDialog = false;
                         break;
@@ -287,23 +291,16 @@ namespace Playground.Dialogs
             switch (choice.Value)
             {
                 case "ยืนยัน":
-                    EmployeeDetails response;
                     switch (userDetails.SwitchState)
                     {
                         case SwitchTo.Ready:
                             var turnOnApi = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/RiderWorkStatusTurnOn/{userDetails.RiderId}";
-                            response = await _restClientService.Put<EmployeeDetails>(turnOnApi, string.Empty);
-                            userDetails.WorkStatus = response is not null ? response.OnWorkStatus : userDetails.WorkStatus;
-                            userDetails.SwitchState = SwitchTo.None;
-                            await _botStateService.SaveChangesAsync(stepContext.Context);
+                            await updateRiderStatus(turnOnApi);
                             break;
 
                         case SwitchTo.NotReady:
                             var turnOffApi = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/RiderWorkStatusTurnOff/{userDetails.RiderId}";
-                            response = await _restClientService.Put<EmployeeDetails>(turnOffApi, string.Empty);
-                            userDetails.WorkStatus = response is not null ? response.OnWorkStatus : userDetails.WorkStatus;
-                            userDetails.SwitchState = SwitchTo.None;
-                            await _botStateService.SaveChangesAsync(stepContext.Context);
+                            await updateRiderStatus(turnOffApi);
                             break;
                     }
                     break;
@@ -316,6 +313,14 @@ namespace Playground.Dialogs
 
             // Restart the main dialog with a different message the second time around
             return await stepContext.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
+
+            async Task updateRiderStatus(string apiStr)
+            {
+                var response = await _restClientService.Put<EmployeeDetails>(apiStr, string.Empty);
+                userDetails.WorkStatus = response is not null ? response.OnWorkStatus : userDetails.WorkStatus;
+                userDetails.SwitchState = SwitchTo.None;
+                await _botStateService.SaveChangesAsync(stepContext.Context);
+            }
         }
 
         private Activity CreateHeroCardWithUrl(string title, string url)
