@@ -113,6 +113,7 @@ namespace Playground.Dialogs
                         await _botStateService.SaveChangesAsync(innerDc.Context);
                         var userId = innerDc.Context.Activity.From.Id;
                         var resetApi = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/AdminWeb/LinkedRemove/{userId}";
+                        await _restClientService.Put(resetApi, string.Empty);
                         break;
 
                     default:
