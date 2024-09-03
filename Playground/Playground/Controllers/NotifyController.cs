@@ -17,21 +17,22 @@ namespace Playground.Controllers
     [ApiController]
     public class NotifyController : ControllerBase
     {
-        private readonly string APIBaseUrl = "https://delivery-3rd-test-api.azurewebsites.net";
         private readonly IBotStateService _botStateService;
         private readonly IRestClientService _restClientService;
         private readonly IBotFrameworkHttpAdapter _adapter;
         private readonly string _appId;
         private readonly ConcurrentDictionary<string, ConversationReference> _conversationReferences;
+        private readonly ConnectionSettings _connectionSetting;
         private readonly IList<string> orderingCmd = ["ติดต่อ"];
         private readonly IList<string> standbyCmd = ["ปิด", "ติดต่อ"];
 
-        public NotifyController(IBotStateService botStateService, IRestClientService restClientService, IBotFrameworkHttpAdapter adapter, IConfiguration configuration, ConcurrentDictionary<string, ConversationReference> conversationReferences)
+        public NotifyController(IBotStateService botStateService, IRestClientService restClientService, IBotFrameworkHttpAdapter adapter, IConfiguration configuration, ConcurrentDictionary<string, ConversationReference> conversationReferences, ConnectionSettings connectionSetting)
         {
             _botStateService = botStateService;
             _restClientService = restClientService;
             _adapter = adapter;
             _conversationReferences = conversationReferences;
+            _connectionSetting = connectionSetting;
             _appId = configuration["MicrosoftAppId"] ?? string.Empty;
         }
 
@@ -70,7 +71,7 @@ namespace Playground.Controllers
                     }
                     else
                     {
-                        var riderDetailsApi = $"{APIBaseUrl}/api/Rider/GetRiderInfo/{userDetails.RiderId}";
+                        var riderDetailsApi = $"{_connectionSetting.DeliveryAPIBaseUrl}/api/Rider/GetRiderInfo/{userDetails.RiderId}";
                         var info = await _restClientService.Get<EmployeeDetails>(riderDetailsApi);
                         userDetails.IsLinkedAccount = true;
                         userDetails.RiderId = info._id;
@@ -124,7 +125,7 @@ namespace Playground.Controllers
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
                 if (userDetails.RiderId != riderId) return;
 
-                var riderDetailsApi = $"{APIBaseUrl}/api/Rider/GetRiderInfo/{userDetails.RiderId}";
+                var riderDetailsApi = $"{_connectionSetting.DeliveryAPIBaseUrl}/api/Rider/GetRiderInfo/{userDetails.RiderId}";
                 var request = await _restClientService.Get<EmployeeDetails>(riderDetailsApi);
                 if (request.OrderRequest == null) return;
 

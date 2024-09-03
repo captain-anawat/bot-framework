@@ -14,10 +14,6 @@ namespace Playground.Dialogs
 {
     public class MainDialog : ComponentDialog
     {
-        private readonly string APIBaseUrl = "https://delivery-3rd-test-api.azurewebsites.net";
-        private readonly string HistoryPageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/history-main";
-        private readonly string ProfilePageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/profile-main";
-        private readonly string OrderStagePageUrl = "https://devster-delivery-test.onmana.space/apprider/index.html#/order-stage";
         private readonly IList<Choice> orderingCmd =
                     [
                         new Choice { Value = "ติดต่อ" }
@@ -35,15 +31,16 @@ namespace Playground.Dialogs
         private readonly IBotStateService _botStateService;
         private readonly IRestClientService _restClientService;
         private readonly ILogger _logger;
+        private readonly ConnectionSettings _connectionSettings;
         private readonly string _replaceDialogMessage = "restart dialog";
 
-        public MainDialog(IBotStateService botStateService, IRestClientService restClientService, ILogger<MainDialog> logger)
+        public MainDialog(IBotStateService botStateService, IRestClientService restClientService, ILogger<MainDialog> logger, ConnectionSettings connectionSettings)
             : base(nameof(MainDialog))
         {
             _botStateService = botStateService;
             _restClientService = restClientService;
             _logger = logger;
-
+            _connectionSettings = connectionSettings;
             AddDialog(new TextPrompt(nameof(TextPrompt)));
             AddDialog(new ChoicePrompt(nameof(ChoicePrompt)));
             AddDialog(new ConfirmPrompt(nameof(ConfirmPrompt)));
@@ -81,10 +78,10 @@ namespace Playground.Dialogs
                 switch (text)
                 {
                     case "งานย้อนหลัง" when userDetails.IsLinkedAccount:
-                        messageActivity = CreateHeroCardWithUrl("ประวัติงานย้อนหลัง", HistoryPageUrl);
+                        messageActivity = CreateHeroCardWithUrl("ประวัติงานย้อนหลัง", _connectionSettings.HistoryPageUrl);
                         break;
                     case "โปรไฟล์" when userDetails.IsLinkedAccount:
-                        messageActivity = CreateHeroCardWithUrl("โปรไฟล์", ProfilePageUrl);
+                        messageActivity = CreateHeroCardWithUrl("โปรไฟล์", _connectionSettings.ProfilePageUrl);
                         break;
                     case "รับออเดอร์" when userDetails.IsLinkedAccount:
                         if (string.IsNullOrWhiteSpace(userDetails.RequestOrder))
@@ -93,7 +90,7 @@ namespace Playground.Dialogs
                             messageActivity = MessageFactory.Text(messageText, messageText);
                             break;
                         }
-                        var acceptOrderApi = $"{APIBaseUrl}/api/Rider/RiderAcceptOrder/{userDetails.RiderId}/{userDetails.RequestOrder}";
+                        var acceptOrderApi = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/RiderAcceptOrder/{userDetails.RiderId}/{userDetails.RequestOrder}";
                         await _restClientService.Put(acceptOrderApi, string.Empty);
                         userDetails.UnfinishOrder = userDetails.RequestOrder;
                         userDetails.RequestOrder = string.Empty;
@@ -131,7 +128,7 @@ namespace Playground.Dialogs
                 {
                     var userId = stepContext.Context.Activity.From.Id;
                     var userName = stepContext.Context.Activity.From.Name;
-                    var sessionRequest = $"{APIBaseUrl}/api/AdminWeb/LinkRequest/line/{userId}/{userName}";
+                    var sessionRequest = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/AdminWeb/LinkRequest/line/{userId}/{userName}";
                     var session = await _restClientService.Get<Session>(sessionRequest);
 
                     var reply = MessageFactory.Attachment(new Attachment
@@ -154,7 +151,7 @@ namespace Playground.Dialogs
             }
             if (!string.IsNullOrWhiteSpace(userDetails.UnfinishOrder))
             {
-                var reply = CreateHeroCardWithUrl("ข้อมูลออเดอร์หรืออัพเดทสถานะออเดอร์", OrderStagePageUrl);
+                var reply = CreateHeroCardWithUrl("ข้อมูลออเดอร์หรืออัพเดทสถานะออเดอร์", _connectionSettings.OrderStagePageUrl);
                 await stepContext.Context.SendActivityAsync(reply, cancellationToken);
 
                 var messageText = $"สถานะไรเดอร์ กำลังวิ่งงาน";
@@ -190,7 +187,7 @@ namespace Playground.Dialogs
             async Task TryGetUserDetail(UserDetails userDetails)
             {
                 var userId = stepContext.Context.Activity.From.Id;
-                var apiStr = $"{APIBaseUrl}/api/Rider/GetRiderInfoWithChatBotId/{userId}";
+                var apiStr = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/GetRiderInfoWithChatBotId/{userId}";
                 var info = await _restClientService.Get<EmployeeDetails>(apiStr);
                 if (info is null) return;
 
@@ -200,7 +197,7 @@ namespace Playground.Dialogs
                 userDetails.DeliveryName = info.DeliveryName;
                 userDetails.PhoneNumber = info.PhoneNumber;
                 userDetails.WorkStatus = info.OnWorkStatus;
-                apiStr = $"{APIBaseUrl}/api/Rider/GetUnfinishedOrder/{info._id}";
+                apiStr = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/GetUnfinishedOrder/{info._id}";
                 var order = await _restClientService.Get<OrderResponse>(apiStr);
                 if (order is not null)
                 {
@@ -239,9 +236,9 @@ namespace Playground.Dialogs
                     }
                     break;
                 default:
-                    messageText = "ระบบไม่เข้าใจคำขอของคุณ";
-                    promptMessage = MessageFactory.Text(messageText, messageText);
-                    await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
+                    //messageText = "ระบบไม่เข้าใจคำขอของคุณ";
+                    //promptMessage = MessageFactory.Text(messageText, messageText);
+                    //await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
                     break;
             }
             return await stepContext.NextAsync(null, cancellationToken);
@@ -256,14 +253,14 @@ namespace Playground.Dialogs
                     switch (userDetails.SwitchState)
                     {
                         case SwitchTo.Ready:
-                            var turnOnApi = $"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOn/{userDetails.RiderId}";
+                            var turnOnApi = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/RiderWorkStatusTurnOn/{userDetails.RiderId}";
                             response = await _restClientService.Put<EmployeeDetails>(turnOnApi, string.Empty);
                             userDetails.WorkStatus = response is not null ? response.OnWorkStatus : userDetails.WorkStatus;
                             userDetails.SwitchState = SwitchTo.None;
                             await _botStateService.SaveChangesAsync(stepContext.Context);
                             break;
                         case SwitchTo.NotReady:
-                            var turnOffApi = $"{APIBaseUrl}/api/Rider/RiderWorkStatusTurnOff/{userDetails.RiderId}";
+                            var turnOffApi = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/RiderWorkStatusTurnOff/{userDetails.RiderId}";
                             response = await _restClientService.Put<EmployeeDetails>(turnOffApi, string.Empty);
                             userDetails.WorkStatus = response is not null ? response.OnWorkStatus : userDetails.WorkStatus;
                             userDetails.SwitchState = SwitchTo.None;

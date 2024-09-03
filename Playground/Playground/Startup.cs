@@ -62,6 +62,9 @@ namespace Playground
 
             // Create the Bot state Service.
             services.AddTransient<IBotStateService, BotStateService>();
+
+            // Get ConnectionSettings from jsonsettings
+            services.AddTransient(it => Configuration.GetSection(typeof(ConnectionSettings).Name).Get<ConnectionSettings>());
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
