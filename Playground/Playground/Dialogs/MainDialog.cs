@@ -7,7 +7,6 @@ using Playground.Models;
 using Playground.Services;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,25 +14,16 @@ namespace Playground.Dialogs
 {
     public class MainDialog : ComponentDialog
     {
-        //private readonly IList<Choice> orderingCmd =
-        //            [
-        //                new Choice { Value = "ติดต่อ" }
-        //            ];
-        //private readonly IList<Choice> standbyCmd =
-        //            [
-        //                new Choice { Value = "ปิด" },
-        //                new Choice { Value = "ติดต่อ" }
-        //            ];
-        //private readonly IList<Choice> offShiftCmd =
-        //            [
-        //                new Choice { Value = "เปิด" },
-        //                new Choice { Value = "ติดต่อ" }
-        //            ];
         private readonly IList<Choice> riderCmd =
                     [
                         new Choice { Value = "เปิด" },
                         new Choice { Value = "ปิด" },
                         new Choice { Value = "ติดต่อ" }
+                    ];
+        private readonly IList<Choice> confirmCmd =
+                    [
+                        new Choice { Value = "ยืนยัน" },
+                        new Choice { Value = "ยกเลิก" }
                     ];
         private readonly IBotStateService _botStateService;
         private readonly IRestClientService _restClientService;
@@ -50,7 +40,6 @@ namespace Playground.Dialogs
             _connectionSettings = connectionSettings;
             AddDialog(new TextPrompt(nameof(TextPrompt)));
             AddDialog(new ChoicePrompt(nameof(ChoicePrompt)));
-            AddDialog(new ConfirmPrompt(nameof(ConfirmPrompt)));
 
             var waterfallSteps = new WaterfallStep[]
             {
@@ -117,15 +106,7 @@ namespace Playground.Dialogs
                         break;
 
                     default:
-                        var expectedMessage = riderCmd.Any(it => it.Value == text)
-                            || text is "yes" or "no";
-                        if (expectedMessage)
-                        {
-                            isRestartDialog = false;
-                            break;
-                        }
-                        messageText = "กรุณาเลือกคำสั่งที่มีให้";
-                        messageActivity = MessageFactory.Text(messageText, messageText);
+                        isRestartDialog = false;
                         break;
                 }
 
@@ -182,7 +163,7 @@ namespace Playground.Dialogs
                 return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
                 {
                     Prompt = promptMessage,
-                    Choices = riderCmd //orderingCmd
+                    Choices = riderCmd
                 }, cancellationToken);
             }
             else if (userDetails.RiderId.StartsWith("mrid"))
@@ -192,7 +173,7 @@ namespace Playground.Dialogs
                 return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
                 {
                     Prompt = promptMessage,
-                    Choices = riderCmd //orderingCmd
+                    Choices = riderCmd
                 }, cancellationToken);
             }
             else
@@ -203,7 +184,7 @@ namespace Playground.Dialogs
                 return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
                 {
                     Prompt = promptMessage,
-                    Choices = riderCmd //userDetails.WorkStatus.Value ? standbyCmd : offShiftCmd
+                    Choices = riderCmd
                 }, cancellationToken);
             }
 
@@ -270,14 +251,20 @@ namespace Playground.Dialogs
                             await _botStateService.SaveChangesAsync(stepContext.Context);
                             messageText = "คุณต้องการ เปิด รับงานใช่หรือไม่";
                             promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
-                            return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+                            return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions { 
+                                Prompt = promptMessage,
+                                Choices = riderCmd
+                            }, cancellationToken);
 
                         case "ปิด":
                             userDetails.SwitchState = SwitchTo.NotReady;
                             await _botStateService.SaveChangesAsync(stepContext.Context);
                             messageText = "คุณต้องการ ปิด รับงานใช่หรือไม่";
                             promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
-                            return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = promptMessage }, cancellationToken);
+                            return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions { 
+                                Prompt = promptMessage,
+                                Choices = confirmCmd
+                            }, cancellationToken);
 
                         case "ติดต่อ":
                             messageText = $"Admin {userDetails.DeliveryName} deilvery{Environment.NewLine}{userDetails.PhoneNumber}";
@@ -296,7 +283,7 @@ namespace Playground.Dialogs
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
             switch (stepContext.Result)
             {
-                case bool confirmResult when confirmResult:
+                case FoundChoice choice when choice.Value is "ยืนยัน":
                     EmployeeDetails response;
                     switch (userDetails.SwitchState)
                     {
