@@ -56,6 +56,10 @@ namespace Playground.Controllers
 
                     if (riderId.StartsWith("mrid"))
                     {
+                        userDetails.IsLinkedAccount = true;
+                        userDetails.RiderId = riderId;
+                        await _botStateService.SaveChangesAsync(turnContext);
+
                         var userName = turnContext.Activity.From.Name;
                         var card = new HeroCard
                         {
