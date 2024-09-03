@@ -23,8 +23,8 @@ namespace Playground.Controllers
         private readonly string _appId;
         private readonly ConcurrentDictionary<string, ConversationReference> _conversationReferences;
         private readonly ConnectionSettings _connectionSetting;
-        private readonly IList<string> orderingCmd = ["ติดต่อ"];
-        private readonly IList<string> standbyCmd = ["ปิด", "ติดต่อ"];
+        //private readonly IList<string> orderingCmd = ["ติดต่อ"];
+        private readonly IList<string> standbyCmd = ["เปิด", "ปิด", "ติดต่อ"];
 
         public NotifyController(IBotStateService botStateService, IRestClientService restClientService, IBotFrameworkHttpAdapter adapter, IConfiguration configuration, ConcurrentDictionary<string, ConversationReference> conversationReferences, ConnectionSettings connectionSetting)
         {
@@ -208,7 +208,7 @@ namespace Playground.Controllers
                 if (userDetails.RiderId != riderId) return;
 
                 var messageText = "คำขอยกเลิกออเดอร์ถูกปฎิเสธ";
-                var reply = MessageFactory.SuggestedActions(orderingCmd, messageText, null, InputHints.ExpectingInput);
+                var reply = MessageFactory.SuggestedActions(standbyCmd, messageText, null, InputHints.ExpectingInput);
                 await turnContext.SendActivityAsync(reply, cancellationToken);
             }
         }
