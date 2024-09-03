@@ -88,9 +88,11 @@ namespace Playground.Dialogs
                     case "งานย้อนหลัง" when userDetails.IsLinkedAccount:
                         messageActivity = CreateHeroCardWithUrl("ประวัติงานย้อนหลัง", _connectionSettings.HistoryPageUrl);
                         break;
+
                     case "โปรไฟล์" when userDetails.IsLinkedAccount:
                         messageActivity = CreateHeroCardWithUrl("โปรไฟล์", _connectionSettings.ProfilePageUrl);
                         break;
+
                     case "รับออเดอร์" when userDetails.IsLinkedAccount:
                         if (string.IsNullOrWhiteSpace(userDetails.RequestOrder))
                         {
@@ -104,13 +106,19 @@ namespace Playground.Dialogs
                         userDetails.RequestOrder = string.Empty;
                         await _botStateService.SaveChangesAsync(innerDc.Context);
                         break;
+
                     case "reset":
                         userDetails.IsLinkedAccount = false;
                         userDetails.RiderId = null;
                         await _botStateService.SaveChangesAsync(innerDc.Context);
+                        var userId = innerDc.Context.Activity.From.Id;
+                        var resetApi = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/AdminWeb/LinkedRemove/{userId}";
                         break;
+
                     default:
-                        if (riderCmd.Any(it => it.Value == text))
+                        var expectedMessage = riderCmd.Any(it => it.Value == text)
+                            || text is "yes" or "no";
+                        if (expectedMessage)
                         {
                             isRestartDialog = false;
                             break;
@@ -158,7 +166,6 @@ namespace Playground.Dialogs
                     {
                         Prompt = CreateHeroCardWithUrl("กรุณาแสกน qr ผูกบัญชีกับมานะ เพื่อเข้าใช้งานระบบ", deeplinkUrl),
                         Choices = riderCmd,
-                        Style = ListStyle.HeroCard,
                     };
                     return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
                 }
