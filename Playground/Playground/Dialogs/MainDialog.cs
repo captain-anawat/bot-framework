@@ -45,7 +45,7 @@ namespace Playground.Dialogs
             {
                 PrepareStepAsync,
                 StandardActStepAsync,
-                FinalStepAsync,
+                ConfirmActStepAsync,
             };
 
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), waterfallSteps));
@@ -281,7 +281,7 @@ namespace Playground.Dialogs
             // Restart the main dialog with a different message the second time around
             return await stepContext.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
         }
-        private async Task<DialogTurnResult> FinalStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
+        private async Task<DialogTurnResult> ConfirmActStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
             var choice = stepContext.Result as FoundChoice;
