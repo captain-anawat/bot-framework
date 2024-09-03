@@ -107,6 +107,7 @@ namespace Playground.Dialogs
 
                     case "ตกลง":
                     case "พร้อมเริ่มงาน":
+                    case "เริ่มผูกบัญชีใหม่":
                         break;
 
                     default:
@@ -144,7 +145,6 @@ namespace Playground.Dialogs
                         ContentType = "image/png",
                         ContentUrl = session.Url,
                     });
-
                     await stepContext.Context.SendActivityAsync(reply, cancellationToken);
 
                     var deeplinkUrl = "https://www.google.com/";
@@ -155,9 +155,9 @@ namespace Playground.Dialogs
                     };
                     return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
                 }
-                return await stepContext.NextAsync(null, cancellationToken);
             }
-            else if (!string.IsNullOrWhiteSpace(userDetails.UnfinishOrder))
+
+            if (!string.IsNullOrWhiteSpace(userDetails.UnfinishOrder))
             {
                 var reply = CreateHeroCardWithUrl("ข้อมูลออเดอร์หรืออัพเดทสถานะออเดอร์", _connectionSettings.OrderStagePageUrl);
                 await stepContext.Context.SendActivityAsync(reply, cancellationToken);
@@ -219,7 +219,6 @@ namespace Playground.Dialogs
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
             string messageText;
             Activity promptMessage;
-            var choice = (FoundChoice)stepContext.Result;
 
             if (!userDetails.IsLinkedAccount)
             {
@@ -237,48 +236,43 @@ namespace Playground.Dialogs
                 return await stepContext.NextAsync(null, cancellationToken);
             }
 
-            switch (choice.Value)
+            switch (stepContext.Result)
             {
-                case "เปิด" when !string.IsNullOrWhiteSpace(userDetails.UnfinishOrder):
-                case "ปิด" when !string.IsNullOrWhiteSpace(userDetails.UnfinishOrder):
-                    messageText = $"คุณไม่สามารถใช้คำสั่ง {choice.Value} ได้ระหว่างกำลังวิ่งงาน";
-                    promptMessage = MessageFactory.Text(messageText, messageText);
-                    await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
-                    break;
-
-                case "เปิด" when userDetails.WorkStatus.Value:
-                case "ปิด" when !userDetails.WorkStatus.Value:
-                    messageText = $"สถานะของคุณเป็น {choice.Value} รับงานอยู่แล้ว";
-                    promptMessage = MessageFactory.Text(messageText, messageText);
-                    await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
-                    break;
-
-                case "เปิด":
-                    userDetails.SwitchState = SwitchTo.Ready;
-                    await _botStateService.SaveChangesAsync(stepContext.Context);
-                    messageText = "คุณต้องการ เปิด รับงานใช่หรือไม่";
-                    promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
+                case FoundChoice choice:
+                    switch (choice.Value)
                     {
-                        Prompt = promptMessage,
-                        Choices = confirmCmd
-                    }, cancellationToken);
+                        case "เปิด" when !string.IsNullOrWhiteSpace(userDetails.UnfinishOrder):
+                        case "ปิด" when !string.IsNullOrWhiteSpace(userDetails.UnfinishOrder):
+                            messageText = $"คุณไม่สามารถใช้คำสั่ง {choice.Value} ได้ระหว่างกำลังวิ่งงาน";
+                            promptMessage = MessageFactory.Text(messageText, messageText);
+                            await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
+                            break;
 
-                case "ปิด":
-                    userDetails.SwitchState = SwitchTo.NotReady;
-                    await _botStateService.SaveChangesAsync(stepContext.Context);
-                    messageText = "คุณต้องการ ปิด รับงานใช่หรือไม่";
-                    promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
-                    return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
-                    {
-                        Prompt = promptMessage,
-                        Choices = confirmCmd
-                    }, cancellationToken);
+                        case "เปิด" when userDetails.WorkStatus.Value:
+                        case "ปิด" when !userDetails.WorkStatus.Value:
+                            messageText = $"สถานะของคุณเป็น {choice.Value} รับงานอยู่แล้ว";
+                            promptMessage = MessageFactory.Text(messageText, messageText);
+                            await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
+                            break;
 
-                case "ติดต่อ":
-                    messageText = $"Admin {userDetails.DeliveryName} deilvery{Environment.NewLine}{userDetails.PhoneNumber}";
-                    promptMessage = MessageFactory.Text(messageText, messageText);
-                    await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
+                        case "เปิด":
+                        case "ปิด":
+                            userDetails.SwitchState = choice.Value is "เปิด" ? SwitchTo.Ready : SwitchTo.NotReady;
+                            await _botStateService.SaveChangesAsync(stepContext.Context);
+                            messageText = $"คุณต้องการ {choice.Value} รับงานใช่หรือไม่";
+                            promptMessage = MessageFactory.Text(messageText, messageText, InputHints.ExpectingInput);
+                            return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
+                            {
+                                Prompt = promptMessage,
+                                Choices = confirmCmd
+                            }, cancellationToken);
+
+                        case "ติดต่อ":
+                            messageText = $"Admin {userDetails.DeliveryName} deilvery{Environment.NewLine}{userDetails.PhoneNumber}";
+                            promptMessage = MessageFactory.Text(messageText, messageText);
+                            await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
+                            break;
+                    }
                     break;
             }
 
@@ -287,10 +281,9 @@ namespace Playground.Dialogs
         private async Task<DialogTurnResult> FinalStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
-            var choice = (FoundChoice)stepContext.Result;
-            switch (choice.Value)
+            switch (stepContext.Result)
             {
-                case "ยืนยัน":
+                case FoundChoice choice when choice.Value is "ยืนยัน":
                     switch (userDetails.SwitchState)
                     {
                         case SwitchTo.Ready:
@@ -305,7 +298,7 @@ namespace Playground.Dialogs
                     }
                     break;
 
-                case "ยกเลิก":
+                case FoundChoice choice when choice.Value is "ยกเลิก":
                     userDetails.SwitchState = SwitchTo.None;
                     await _botStateService.SaveChangesAsync(stepContext.Context);
                     break;

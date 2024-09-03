@@ -104,7 +104,7 @@ namespace Playground.Controllers
                     {
                         Title = $"คุณถูกปฎิเสธการผูก line account กับ mana",
                         Buttons = new List<CardAction> {
-                            new(ActionTypes.ImBack, title: "เริ่มผูกบัญชีใหม่", value: false)
+                            new(ActionTypes.ImBack, title: "เริ่มผูกบัญชีใหม่", value: "เริ่มผูกบัญชีใหม่")
                         }
                     };
 
