@@ -65,7 +65,7 @@ namespace Playground.Controllers
                         {
                             Title = $"คุณ {userName} ยังไม่ได้เข้าร่วมกับ delivery นี้",
                             Buttons = new List<CardAction> {
-                                new(ActionTypes.ImBack, title: "ยืนยัน", value: true)
+                                new(ActionTypes.ImBack, title: "ยืนยัน", value: "ยืนยัน")
                             }
                         };
 
