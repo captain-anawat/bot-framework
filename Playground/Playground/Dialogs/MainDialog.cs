@@ -147,10 +147,10 @@ namespace Playground.Dialogs
                     });
                     await stepContext.Context.SendActivityAsync(reply, cancellationToken);
 
-                    var deeplinkUrl = "https://www.google.com/";
+                    var redirectToDeeplinkUrl = $"{_connectionSettings.RedirectManaDeeplinkBaseUrl}?np_url={session.Url}";
                     var promptOptions = new PromptOptions
                     {
-                        Prompt = CreateHeroCardWithUrl("กรุณาแสกน qr ผูกบัญชีกับมานะ เพื่อเข้าใช้งานระบบ", deeplinkUrl),
+                        Prompt = CreateHeroCardWithUrl("กรุณาแสกน qr ผูกบัญชีกับมานะ เพื่อเข้าใช้งานระบบ", redirectToDeeplinkUrl),
                         Choices = riderCmd,
                     };
                     return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
