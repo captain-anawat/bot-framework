@@ -25,11 +25,11 @@ namespace Playground.Dialogs
                 new Choice { Value = "ยืนยัน" },
                 new Choice { Value = "ยกเลิก" }
             ];
+        private readonly string _replaceDialogMessage = "restart dialog";
         private readonly IBotStateService _botStateService;
         private readonly IRestClientService _restClientService;
         private readonly ILogger _logger;
         private readonly ConnectionSettings _connectionSettings;
-        private readonly string _replaceDialogMessage = "restart dialog";
 
         public MainDialog(IBotStateService botStateService, IRestClientService restClientService, ILogger<MainDialog> logger, ConnectionSettings connectionSettings)
             : base(nameof(MainDialog))

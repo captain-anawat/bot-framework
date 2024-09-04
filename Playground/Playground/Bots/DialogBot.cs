@@ -32,9 +32,6 @@ namespace Playground.Bots
             {
                 if (member.Id != turnContext.Activity.Recipient.Id)
                 {
-                    var lineUserId = member.Id;
-                    //var response = MessageFactory.Text($"Welcome lineUser ID: {lineUserId}");
-                    //await turnContext.SendActivityAsync(response, cancellationToken);
                     await Dialog.RunAsync(turnContext, ConversationState.CreateProperty<DialogState>("DialogState"), cancellationToken);
                 }
             }
@@ -57,17 +54,17 @@ namespace Playground.Bots
             await Dialog.RunAsync(turnContext, ConversationState.CreateProperty<DialogState>("DialogState"), cancellationToken);
         }
 
-        private void AddConversationReference(Activity activity)
-        {
-            var conversationReference = activity.GetConversationReference();
-            ConversationReferences.AddOrUpdate(conversationReference.User.Id, conversationReference, (key, newValue) => conversationReference);
-        }
-
         protected override Task OnConversationUpdateActivityAsync(ITurnContext<IConversationUpdateActivity> turnContext, CancellationToken cancellationToken)
         {
             AddConversationReference(turnContext.Activity as Activity);
 
             return base.OnConversationUpdateActivityAsync(turnContext, cancellationToken);
+        }
+
+        private void AddConversationReference(Activity activity)
+        {
+            var conversationReference = activity.GetConversationReference();
+            ConversationReferences.AddOrUpdate(conversationReference.User.Id, conversationReference, (key, newValue) => conversationReference);
         }
     }
 }
