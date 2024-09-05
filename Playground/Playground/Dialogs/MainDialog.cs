@@ -90,7 +90,7 @@ namespace Playground.Dialogs
                             break;
                         }
                         var acceptOrderApi = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/RiderAcceptOrder/{userDetails.RiderId}/{userDetails.RequestOrder}";
-                        await _restClientService.Put(acceptOrderApi, string.Empty);
+                        await _restClientService.Put(acceptOrderApi, innerDc.Context.Activity.From.Id, string.Empty);
                         userDetails.UnfinishOrder = userDetails.RequestOrder;
                         userDetails.RequestOrder = string.Empty;
                         await _botStateService.SaveChangesAsync(innerDc.Context);
@@ -102,7 +102,7 @@ namespace Playground.Dialogs
                         await _botStateService.SaveChangesAsync(innerDc.Context);
                         var userId = innerDc.Context.Activity.From.Id;
                         var resetApi = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/AdminWeb/LinkedRemove/{userId}";
-                        await _restClientService.Put(resetApi, string.Empty);
+                        await _restClientService.Put(resetApi, innerDc.Context.Activity.From.Id, string.Empty);
                         break;
 
                     case "ตกลง":
@@ -138,7 +138,7 @@ namespace Playground.Dialogs
                     var userId = stepContext.Context.Activity.From.Id;
                     var userName = stepContext.Context.Activity.From.Name;
                     var sessionRequest = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/AdminWeb/LinkRequest/line/{userId}/{userName}";
-                    var session = await _restClientService.Get<Session>(sessionRequest);
+                    var session = await _restClientService.Get<Session>(sessionRequest, userId);
 
                     var reply = MessageFactory.Attachment(new Attachment
                     {
@@ -195,8 +195,8 @@ namespace Playground.Dialogs
             async Task TryGetUserDetail(UserDetails userDetails)
             {
                 var userId = stepContext.Context.Activity.From.Id;
-                var apiStr = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/GetRiderInfoWithChatBotId/{userId}";
-                var info = await _restClientService.Get<EmployeeDetails>(apiStr);
+                var apiStr = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/GetRiderInfoWithChatBotId";
+                var info = await _restClientService.Get<EmployeeDetails>(apiStr, userId);
                 if (info is null) return;
 
                 userDetails.IsLinkedAccount = true;
@@ -206,7 +206,7 @@ namespace Playground.Dialogs
                 userDetails.PhoneNumber = info.PhoneNumber;
                 userDetails.WorkStatus = info.OnWorkStatus;
                 apiStr = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/GetUnfinishedOrder/{info._id}";
-                var order = await _restClientService.Get<OrderResponse>(apiStr);
+                var order = await _restClientService.Get<OrderResponse>(apiStr, userId);
                 if (order is not null)
                 {
                     userDetails.UnfinishOrder = order._id;
@@ -312,7 +312,7 @@ namespace Playground.Dialogs
 
             async Task updateRiderStatus(string apiStr)
             {
-                var response = await _restClientService.Put<EmployeeDetails>(apiStr, string.Empty);
+                var response = await _restClientService.Put<EmployeeDetails>(apiStr, stepContext.Context.Activity.From.Id, string.Empty);
                 userDetails.WorkStatus = response is not null ? response.OnWorkStatus : userDetails.WorkStatus;
                 await _botStateService.SaveChangesAsync(stepContext.Context);
             }

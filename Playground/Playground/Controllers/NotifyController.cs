@@ -76,7 +76,7 @@ namespace Playground.Controllers
                     else
                     {
                         var riderDetailsApi = $"{_connectionSetting.DeliveryAPIBaseUrl}/api/Rider/GetRiderInfo/{userDetails.RiderId}";
-                        var info = await _restClientService.Get<EmployeeDetails>(riderDetailsApi);
+                        var info = await _restClientService.Get<EmployeeDetails>(riderDetailsApi, turnContext.Activity.From.Id);
                         userDetails.IsLinkedAccount = true;
                         userDetails.RiderId = info._id;
                         userDetails.UserName = info.Name;
@@ -130,7 +130,7 @@ namespace Playground.Controllers
                 if (userDetails.RiderId != riderId) return;
 
                 var riderDetailsApi = $"{_connectionSetting.DeliveryAPIBaseUrl}/api/Rider/GetRiderInfo/{userDetails.RiderId}";
-                var request = await _restClientService.Get<EmployeeDetails>(riderDetailsApi);
+                var request = await _restClientService.Get<EmployeeDetails>(riderDetailsApi, turnContext.Activity.From.Id);
                 if (request.OrderRequest == null) return;
 
                 userDetails.RequestOrder = request.OrderRequest._id;

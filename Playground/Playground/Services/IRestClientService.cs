@@ -8,45 +8,67 @@ namespace Playground.Services
 {
     public interface IRestClientService
     {
-        Task<T> Get<T>(string endpointUrl);
-        Task<T> Post<T>(string endpointUrl, string requestBody);
-        Task Put(string endpointUrl, string requestBody);
-        Task<T> Put<T>(string endpointUrl, string requestBody);
+        Task<T> Get<T>(string endpointUrl, string userId);
+        Task<T> Post<T>(string endpointUrl, string userId, string requestBody);
+        Task Put(string endpointUrl, string userId, string requestBody);
+        Task<T> Put<T>(string endpointUrl, string userId, string requestBody);
     }
     public class RestClientService : IRestClientService
     {
-        public async Task<T> Get<T>(string endpointUrl)
+        public async Task<T> Get<T>(string endpointUrl, string userId)
         {
-            var rsp = await endpointUrl
-                .GetAsync();
-            if (rsp.StatusCode == 200)
-                return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
-
+            try
+            {
+                var headers = new { Line_id = userId };
+                var rsp = await endpointUrl
+                    .WithHeaders(headers)
+                    .GetAsync();
+                if (rsp.StatusCode == 200)
+                    return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
+            }
+            catch { }
             return default;
         }
 
-        public async Task<T> Post<T>(string endpointUrl, string requestBody)
+        public async Task<T> Post<T>(string endpointUrl, string userId, string requestBody)
         {
-            var rsp = await endpointUrl
-                .PostAsync(new StringContent(requestBody, Encoding.UTF8, "application/json"));
-            if (rsp.StatusCode == 200)
-                return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
-
+            try
+            {
+                var headers = new { Line_id = userId };
+                var rsp = await endpointUrl
+                    .WithHeaders(headers)
+                    .PostAsync(new StringContent(requestBody, Encoding.UTF8, "application/json"));
+                if (rsp.StatusCode == 200)
+                    return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
+            }
+            catch { }
             return default;
         }
 
-        public async Task Put(string endpointUrl, string requestBody)
+        public async Task Put(string endpointUrl, string userId, string requestBody)
         {
-            await endpointUrl.PutAsync(new StringContent(requestBody, Encoding.UTF8, "application/json"));
+            try
+            {
+                var headers = new { Line_id = userId };
+                await endpointUrl
+                    .WithHeaders(headers)
+                    .PutAsync(new StringContent(requestBody, Encoding.UTF8, "application/json"));
+            }
+            catch { }
         }
 
-        public async Task<T> Put<T>(string endpointUrl, string requestBody)
+        public async Task<T> Put<T>(string endpointUrl, string userId, string requestBody)
         {
-            var rsp = await endpointUrl
-                .PutAsync(new StringContent(requestBody, Encoding.UTF8, "application/json"));
-            if (rsp.StatusCode == 200)
-                return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
-
+            try
+            {
+                var headers = new { Line_id = userId };
+                var rsp = await endpointUrl
+                    .WithHeaders(headers)
+                    .PutAsync(new StringContent(requestBody, Encoding.UTF8, "application/json"));
+                if (rsp.StatusCode == 200)
+                    return await rsp.ResponseMessage.Content.ReadFromJsonAsync<T>();
+            }
+            catch { }
             return default;
         }
     }
