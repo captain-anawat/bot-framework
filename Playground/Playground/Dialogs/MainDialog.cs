@@ -72,6 +72,15 @@ namespace Playground.Dialogs
                 IMessageActivity messageActivity = null;
                 bool isRestartDialog = true;
                 var text = innerDc.Context.Activity.Text.ToLowerInvariant();
+
+                if (!userDetails.IsLinkedAccount)
+                {
+                    messageText = "คุณยังไม่ได้ผูก line account กับ mana";
+                    var promptMessage = MessageFactory.Text(messageText, messageText);
+                    await innerDc.Context.SendActivityAsync(promptMessage, cancellationToken);
+                    return await innerDc.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
+                }
+
                 switch (text)
                 {
                     case "งานย้อนหลัง" when userDetails.IsLinkedAccount:
@@ -219,14 +228,6 @@ namespace Playground.Dialogs
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
             string messageText;
             Activity promptMessage;
-
-            if (!userDetails.IsLinkedAccount)
-            {
-                messageText = "คุณยังไม่ได้ผูก line account กับ mana";
-                promptMessage = MessageFactory.Text(messageText, messageText);
-                await stepContext.Context.SendActivityAsync(promptMessage, cancellationToken);
-                return await stepContext.NextAsync(null, cancellationToken);
-            }
 
             if (userDetails.RiderId.StartsWith("mrid"))
             {
