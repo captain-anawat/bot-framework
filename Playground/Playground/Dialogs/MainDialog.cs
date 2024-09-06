@@ -73,7 +73,7 @@ namespace Playground.Dialogs
                 bool isRestartDialog = true;
                 var text = innerDc.Context.Activity.Text.ToLowerInvariant();
 
-                if (!userDetails.IsLinkedAccount)
+                if (!userDetails.IsLinkedAccount && text is not "reset")
                 {
                     messageText = "คุณยังไม่ได้ผูก line account กับ mana";
                     var promptMessage = MessageFactory.Text(messageText, messageText);
