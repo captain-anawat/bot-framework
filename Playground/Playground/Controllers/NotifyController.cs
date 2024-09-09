@@ -191,7 +191,7 @@ namespace Playground.Controllers
                 userDetails.UnfinishOrder = string.Empty;
                 await _botStateService.SaveChangesAsync(turnContext);
 
-                var messageText = "คำขอยกเลิกออเดอร์ได้รับการอนุมัติ";
+                var messageText = "ออเดอร์ถูกยกเลิก";
                 var reply = MessageFactory.SuggestedActions(standbyCmd, messageText, null, InputHints.ExpectingInput);
                 await turnContext.SendActivityAsync(reply, cancellationToken);
             }

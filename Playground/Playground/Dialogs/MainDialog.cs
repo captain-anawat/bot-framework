@@ -73,14 +73,6 @@ namespace Playground.Dialogs
                 bool isRestartDialog = true;
                 var text = innerDc.Context.Activity.Text.ToLowerInvariant();
 
-                if (!userDetails.IsLinkedAccount && text is not "reset")
-                {
-                    messageText = "คุณยังไม่ได้ผูก line account กับ mana";
-                    var promptMessage = MessageFactory.Text(messageText, messageText);
-                    await innerDc.Context.SendActivityAsync(promptMessage, cancellationToken);
-                    return await innerDc.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
-                }
-
                 switch (text)
                 {
                     case "งานย้อนหลัง" when userDetails.IsLinkedAccount:
@@ -133,6 +125,13 @@ namespace Playground.Dialogs
                     // Restart the main dialog with a different message the second time around
                     return await innerDc.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
                 }
+                else if (!userDetails.IsLinkedAccount)
+                {
+                    messageText = "คุณยังไม่ได้ผูก line account กับ mana";
+                    var promptMessage = MessageFactory.Text(messageText, messageText);
+                    await innerDc.Context.SendActivityAsync(promptMessage, cancellationToken);
+                    return await innerDc.ReplaceDialogAsync(InitialDialogId, _replaceDialogMessage, cancellationToken);
+                }
             }
             return null;
         }
@@ -159,7 +158,7 @@ namespace Playground.Dialogs
                     var redirectToDeeplinkUrl = $"{_connectionSettings.RedirectManaDeeplinkBaseUrl}?np_url={session.Url}";
                     var promptOptions = new PromptOptions
                     {
-                        Prompt = CreateHeroCardWithUrl("กรุณาแสกน qr ผูกบัญชีกับมานะ เพื่อเข้าใช้งานระบบ", redirectToDeeplinkUrl),
+                        Prompt = CreateHeroCardWithUrl("กรุณาแสกน qr ผูกบัญชีกับมานะ เพื่อเข้าใช้งานระบบ", redirectToDeeplinkUrl, "เปิดแอพ มานะ"),
                         Choices = riderCmd,
                     };
                     return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
@@ -178,7 +177,7 @@ namespace Playground.Dialogs
             }
             else if (!string.IsNullOrWhiteSpace(userDetails.UnfinishOrder))
             {
-                var reply = CreateHeroCardWithUrl("ข้อมูลออเดอร์หรืออัพเดทสถานะออเดอร์", _connectionSettings.OrderStagePageUrl);
+                var reply = CreateHeroCardWithUrl("ดูข้อมูลออเดอร์หรืออัพเดทสถานะออเดอร์", _connectionSettings.OrderStagePageUrl);
                 await stepContext.Context.SendActivityAsync(reply, cancellationToken);
 
                 var messageText = $"สถานะไรเดอร์ กำลังวิ่งงาน";
@@ -319,14 +318,14 @@ namespace Playground.Dialogs
             }
         }
 
-        private Activity CreateHeroCardWithUrl(string title, string url)
+        private Activity CreateHeroCardWithUrl(string title, string url, string buttonText = null)
         {
             var card = new HeroCard
             {
                 Title = title,
                 Buttons = new List<CardAction>
                 {
-                    new(ActionTypes.OpenUrl, title: "เปิด", value: url),
+                    new(ActionTypes.OpenUrl, title: buttonText ?? "เปิด", value: url),
                 }
             };
             return (Activity)MessageFactory.Attachment(card.ToAttachment());
