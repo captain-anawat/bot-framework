@@ -2,7 +2,7 @@
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
+using Playground.Services;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,19 +12,19 @@ namespace Playground.Bots
     public class DialogBot<T> : ActivityHandler
         where T : Dialog
     {
-        protected readonly Dialog Dialog;
-        protected readonly BotState ConversationState;
-        protected readonly BotState UserState;
-        protected readonly ILogger Logger;
-        private readonly ConcurrentDictionary<string, ConversationReference> ConversationReferences;
+        protected readonly Dialog _dialog;
+        protected readonly BotState _conversationState;
+        private readonly IConversationReferenceRepository _referenceRepository;
+        protected readonly BotState _userState;
+        protected readonly ILogger _logger;
 
-        public DialogBot(ConversationState conversationState, ConcurrentDictionary<string, ConversationReference> conversationReferences, UserState userState, T dialog, ILogger<DialogBot<T>> logger)
+        public DialogBot(ConversationState conversationState, IConversationReferenceRepository referenceRepository, UserState userState, T dialog, ILogger<DialogBot<T>> logger)
         {
-            ConversationState = conversationState;
-            ConversationReferences = conversationReferences;
-            UserState = userState;
-            Dialog = dialog;
-            Logger = logger;
+            _conversationState = conversationState;
+            _referenceRepository = referenceRepository;
+            _userState = userState;
+            _dialog = dialog;
+            _logger = logger;
         }
         protected override async Task OnMembersAddedAsync(IList<ChannelAccount> membersAdded, ITurnContext<IConversationUpdateActivity> turnContext, CancellationToken cancellationToken)
         {
@@ -32,7 +32,7 @@ namespace Playground.Bots
             {
                 if (member.Id != turnContext.Activity.Recipient.Id)
                 {
-                    await Dialog.RunAsync(turnContext, ConversationState.CreateProperty<DialogState>("DialogState"), cancellationToken);
+                    await _dialog.RunAsync(turnContext, _conversationState.CreateProperty<DialogState>("DialogState"), cancellationToken);
                 }
             }
         }
@@ -42,8 +42,8 @@ namespace Playground.Bots
             await base.OnTurnAsync(turnContext, cancellationToken);
 
             // Save any state changes that might have occurred during the turn.
-            await ConversationState.SaveChangesAsync(turnContext, false, cancellationToken);
-            await UserState.SaveChangesAsync(turnContext, false, cancellationToken);
+            await _conversationState.SaveChangesAsync(turnContext, false, cancellationToken);
+            await _userState.SaveChangesAsync(turnContext, false, cancellationToken);
         }
 
         protected override async Task OnMessageActivityAsync(ITurnContext<IMessageActivity> turnContext, CancellationToken cancellationToken)
@@ -51,7 +51,7 @@ namespace Playground.Bots
             AddConversationReference(turnContext.Activity as Activity);
 
             // Run the Dialog with the new message Activity.
-            await Dialog.RunAsync(turnContext, ConversationState.CreateProperty<DialogState>("DialogState"), cancellationToken);
+            await _dialog.RunAsync(turnContext, _conversationState.CreateProperty<DialogState>("DialogState"), cancellationToken);
         }
 
         protected override Task OnConversationUpdateActivityAsync(ITurnContext<IConversationUpdateActivity> turnContext, CancellationToken cancellationToken)
@@ -64,7 +64,7 @@ namespace Playground.Bots
         private void AddConversationReference(Activity activity)
         {
             var conversationReference = activity.GetConversationReference();
-            ConversationReferences.AddOrUpdate(conversationReference.User.Id, conversationReference, (key, newValue) => conversationReference);
+            _referenceRepository.AddOrUpdateConversationReferenceAsync(conversationReference.User.Id, conversationReference);
         }
     }
 }

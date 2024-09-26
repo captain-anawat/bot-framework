@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Playground.Models;
 using Playground.Services;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,29 +19,27 @@ namespace Playground.Controllers
         private readonly IBotStateService _botStateService;
         private readonly IRestClientService _restClientService;
         private readonly IBotFrameworkHttpAdapter _adapter;
+        private readonly IConversationReferenceRepository _referenceRepository;
         private readonly string _appId;
-        private readonly ConcurrentDictionary<string, ConversationReference> _conversationReferences;
         private readonly ConnectionSettings _connectionSetting;
         //private readonly IList<string> orderingCmd = ["ติดต่อ"];
-        private readonly IList<string> standbyCmd = ["เปิด", "ปิด", "ติดต่อ"];
+        private readonly IList<string> _standbyCmd = ["เปิด", "ปิด", "ติดต่อ"];
 
-        public NotifyController(IBotStateService botStateService, IRestClientService restClientService, IBotFrameworkHttpAdapter adapter, IConfiguration configuration, ConcurrentDictionary<string, ConversationReference> conversationReferences, ConnectionSettings connectionSetting)
+        public NotifyController(IBotStateService botStateService, IRestClientService restClientService, IBotFrameworkHttpAdapter adapter, IConfiguration configuration, IConversationReferenceRepository referenceRepository, ConnectionSettings connectionSetting)
         {
             _botStateService = botStateService;
             _restClientService = restClientService;
             _adapter = adapter;
-            _conversationReferences = conversationReferences;
+            _referenceRepository = referenceRepository;
             _connectionSetting = connectionSetting;
             _appId = configuration["MicrosoftAppId"] ?? string.Empty;
         }
 
-        [HttpGet("{riderId}/{botUserId}/{isApprove}")]
-        public async Task<IActionResult> LinkAccount(string riderId, string botUserId, bool isApprove)
+        [HttpGet("{botUserId}/{riderId}/{isApprove}")]
+        public async Task<IActionResult> LinkAccount(string botUserId, string riderId, bool isApprove)
         {
-            foreach (var conversationReference in _conversationReferences.Values)
-            {
+            var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
                 await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, LinkAccountRequestBotCallback, default(CancellationToken));
-            }
             return Ok();
 
             async Task LinkAccountRequestBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
@@ -115,19 +112,16 @@ namespace Playground.Controllers
             }
         }
 
-        [HttpGet("{riderId}")]
-        public async Task<IActionResult> Ordering(string riderId)
+        [HttpGet("{botUserId}")]
+        public async Task<IActionResult> Ordering(string botUserId)
         {
-            foreach (var conversationReference in _conversationReferences.Values)
-            {
+            var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
                 await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, RequestBotCallback, default(CancellationToken));
-            }
             return Ok();
 
             async Task RequestBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
             {
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
-                if (userDetails.RiderId != riderId) return;
 
                 var riderDetailsApi = $"{_connectionSetting.DeliveryAPIBaseUrl}/api/Rider/GetRiderInfo/{userDetails.RiderId}";
                 var request = await _restClientService.Get<EmployeeDetails>(riderDetailsApi, turnContext.Activity.From.Id);
@@ -151,91 +145,79 @@ namespace Playground.Controllers
             }
         }
 
-        [HttpGet("{riderId}")]
-        public async Task<IActionResult> Timeup(string riderId)
+        [HttpGet("{botUserId}")]
+        public async Task<IActionResult> Timeup(string botUserId)
         {
-            foreach (var conversationReference in _conversationReferences.Values)
-            {
+            var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
                 await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, TimeupBotCallback, default(CancellationToken));
-            }
             return Ok();
 
             async Task TimeupBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
             {
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
-                if (userDetails.RiderId != riderId) return;
 
                 userDetails.RequestOrder = string.Empty;
                 await _botStateService.SaveChangesAsync(turnContext);
 
                 var messageText = "คุณกดรับไม่ทันเวลาที่กำหนด กรุณารองานถัดไป";
-                var reply = MessageFactory.SuggestedActions(standbyCmd, messageText, null, InputHints.ExpectingInput);
+                var reply = MessageFactory.SuggestedActions(_standbyCmd, messageText, null, InputHints.ExpectingInput);
                 await turnContext.SendActivityAsync(reply, cancellationToken);
             }
         }
 
-        [HttpGet("{riderId}")]
-        public async Task<IActionResult> Cancel(string riderId)
+        [HttpGet("{botUserId}")]
+        public async Task<IActionResult> Cancel(string botUserId)
         {
-            foreach (var conversationReference in _conversationReferences.Values)
-            {
+            var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
                 await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, CancelBotCallback, default(CancellationToken));
-            }
             return Ok();
 
             async Task CancelBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
             {
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
-                if (userDetails.RiderId != riderId) return;
 
                 userDetails.UnfinishOrder = string.Empty;
                 await _botStateService.SaveChangesAsync(turnContext);
 
                 var messageText = "ออเดอร์ถูกยกเลิก";
-                var reply = MessageFactory.SuggestedActions(standbyCmd, messageText, null, InputHints.ExpectingInput);
+                var reply = MessageFactory.SuggestedActions(_standbyCmd, messageText, null, InputHints.ExpectingInput);
                 await turnContext.SendActivityAsync(reply, cancellationToken);
             }
         }
 
-        [HttpGet("{riderId}")]
-        public async Task<IActionResult> CancelDeny(string riderId)
+        [HttpGet("{botUserId}")]
+        public async Task<IActionResult> CancelDeny(string botUserId)
         {
-            foreach (var conversationReference in _conversationReferences.Values)
-            {
+            var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
                 await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, CancelDenyBotCallback, default(CancellationToken));
-            }
             return Ok();
 
             async Task CancelDenyBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
             {
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
-                if (userDetails.RiderId != riderId) return;
 
                 var messageText = "คำขอยกเลิกออเดอร์ถูกปฎิเสธ";
-                var reply = MessageFactory.SuggestedActions(standbyCmd, messageText, null, InputHints.ExpectingInput);
+                var reply = MessageFactory.SuggestedActions(_standbyCmd, messageText, null, InputHints.ExpectingInput);
                 await turnContext.SendActivityAsync(reply, cancellationToken);
             }
         }
 
-        [HttpGet("{riderId}")]
-        public async Task<IActionResult> Done(string riderId)
-        {
-            foreach (var conversationReference in _conversationReferences.Values)
+        [HttpGet("{botUserId}")]
+        public async Task<IActionResult> Done(string botUserId)
             {
+            var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
                 await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, DoneBotCallback, default(CancellationToken));
-            }
             return Ok();
 
             async Task DoneBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
             {
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
-                if (userDetails.RiderId != riderId) return;
 
                 userDetails.UnfinishOrder = string.Empty;
                 await _botStateService.SaveChangesAsync(turnContext);
 
                 var messageText = "คุณส่งออเดอร์เรียบร้อย";
-                var reply = MessageFactory.SuggestedActions(standbyCmd, messageText, null, InputHints.ExpectingInput);
+                var reply = MessageFactory.SuggestedActions(_standbyCmd, messageText, null, InputHints.ExpectingInput);
                 await turnContext.SendActivityAsync(reply, cancellationToken);
             }
         }

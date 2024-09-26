@@ -11,6 +11,7 @@
     <PackageReference Include="Microsoft.Bot.Builder.Dialogs" Version="4.22.7" />
     <PackageReference Include="Microsoft.Bot.Builder.Dialogs.Declarative" Version="4.22.7" />
     <PackageReference Include="Microsoft.Bot.Builder.Integration.AspNet.Core" Version="4.22.7" />
+    <PackageReference Include="MongoDB.Driver" Version="2.29.0" />
   </ItemGroup>
 
     <ItemGroup>

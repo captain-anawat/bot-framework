@@ -14,13 +14,13 @@ namespace Playground.Dialogs
 {
     public class MainDialog : ComponentDialog
     {
-        private readonly IList<Choice> riderCmd =
+        private readonly IList<Choice> _riderCmd =
             [
                 new Choice { Value = "เปิด" },
                 new Choice { Value = "ปิด" },
                 new Choice { Value = "ติดต่อ" }
             ];
-        private readonly IList<Choice> confirmCmd =
+        private readonly IList<Choice> _confirmCmd =
             [
                 new Choice { Value = "ยืนยัน" },
                 new Choice { Value = "ยกเลิก" }
@@ -159,7 +159,7 @@ namespace Playground.Dialogs
                     var promptOptions = new PromptOptions
                     {
                         Prompt = CreateHeroCardWithUrl("กรุณาแสกน qr ผูกบัญชีกับมานะ เพื่อเข้าใช้งานระบบ", redirectToDeeplinkUrl, "เปิดแอพ มานะ"),
-                        Choices = riderCmd,
+                        Choices = _riderCmd,
                     };
                     return await stepContext.PromptAsync(nameof(ChoicePrompt), promptOptions, cancellationToken);
                 }
@@ -172,7 +172,7 @@ namespace Playground.Dialogs
                 return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
                 {
                     Prompt = promptMessage,
-                    Choices = riderCmd
+                    Choices = _riderCmd
                 }, cancellationToken);
             }
             else if (!string.IsNullOrWhiteSpace(userDetails.UnfinishOrder))
@@ -185,7 +185,7 @@ namespace Playground.Dialogs
                 return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
                 {
                     Prompt = promptMessage,
-                    Choices = riderCmd
+                    Choices = _riderCmd
                 }, cancellationToken);
             }
             else
@@ -196,7 +196,7 @@ namespace Playground.Dialogs
                 return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
                 {
                     Prompt = promptMessage,
-                    Choices = riderCmd
+                    Choices = _riderCmd
                 }, cancellationToken);
             }
 
@@ -268,7 +268,7 @@ namespace Playground.Dialogs
                     return await stepContext.PromptAsync(nameof(ChoicePrompt), new PromptOptions
                     {
                         Prompt = promptMessage,
-                        Choices = confirmCmd
+                        Choices = _confirmCmd
                     }, cancellationToken);
 
                 case "ติดต่อ":

@@ -5,14 +5,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
-using Microsoft.Bot.Schema;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Playground.Bots;
 using Playground.Dialogs;
 using Playground.Services;
-using System.Collections.Concurrent;
 
 namespace Playground
 {
@@ -48,9 +46,6 @@ namespace Playground
             // Create the Conversation state. (Used by the Dialog system itself.)
             services.AddSingleton<ConversationState>();
 
-            // Create the Concurrent dictionary.
-            services.AddSingleton<ConcurrentDictionary<string, ConversationReference>>();
-
             // The MainDialog that will be run by the bot.
             services.AddSingleton<MainDialog>();
 
@@ -63,8 +58,14 @@ namespace Playground
             // Create the Bot state Service.
             services.AddTransient<IBotStateService, BotStateService>();
 
+            // Create the Conversation reference repository
+            services.AddTransient<IConversationReferenceRepository, ConversationReferenceRepository>();
+
             // Get ConnectionSettings from jsonsettings
             services.AddTransient(it => Configuration.GetSection(typeof(ConnectionSettings).Name).Get<ConnectionSettings>());
+
+            // Get DatabaseSettings from jsonsettings
+            services.AddTransient(it => Configuration.GetSection(typeof(DbConfig).Name).Get<DbConfig>());
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
