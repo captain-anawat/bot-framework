@@ -18,6 +18,7 @@ namespace Playground.Controllers
     {
         private readonly IBotStateService _botStateService;
         private readonly IRestClientService _restClientService;
+        private readonly IUserDetailService _userDetailService;
         private readonly IBotFrameworkHttpAdapter _adapter;
         private readonly IConversationReferenceRepository _referenceRepository;
         private readonly string _appId;
@@ -25,10 +26,11 @@ namespace Playground.Controllers
         //private readonly IList<string> orderingCmd = ["ติดต่อ"];
         private readonly IList<string> _standbyCmd = ["เปิด", "ปิด", "ติดต่อ"];
 
-        public NotifyController(IBotStateService botStateService, IRestClientService restClientService, IBotFrameworkHttpAdapter adapter, IConfiguration configuration, IConversationReferenceRepository referenceRepository, ConnectionSettings connectionSetting)
+        public NotifyController(IBotStateService botStateService, IRestClientService restClientService, IUserDetailService userDetailService, IBotFrameworkHttpAdapter adapter, IConfiguration configuration, IConversationReferenceRepository referenceRepository, ConnectionSettings connectionSetting)
         {
             _botStateService = botStateService;
             _restClientService = restClientService;
+            _userDetailService = userDetailService;
             _adapter = adapter;
             _referenceRepository = referenceRepository;
             _connectionSetting = connectionSetting;
@@ -39,7 +41,7 @@ namespace Playground.Controllers
         public async Task<IActionResult> LinkAccount(string botUserId, string riderId, bool isApprove)
         {
             var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
-                await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, LinkAccountRequestBotCallback, default(CancellationToken));
+            await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, LinkAccountRequestBotCallback, default(CancellationToken));
             return Ok();
 
             async Task LinkAccountRequestBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
@@ -48,6 +50,7 @@ namespace Playground.Controllers
                 if (isApprove)
                 {
                     var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
+
                     userDetails.RiderId = riderId;
                     await _botStateService.SaveChangesAsync(turnContext);
 
@@ -73,18 +76,12 @@ namespace Playground.Controllers
                     else
                     {
                         var riderDetailsApi = $"{_connectionSetting.DeliveryAPIBaseUrl}/api/Rider/GetRiderInfo/{userDetails.RiderId}";
-                        var info = await _restClientService.Get<EmployeeDetails>(riderDetailsApi, turnContext.Activity.From.Id);
-                        userDetails.IsLinkedAccount = true;
-                        userDetails.RiderId = info._id;
-                        userDetails.UserName = info.Name;
-                        userDetails.DeliveryName = info.DeliveryName;
-                        userDetails.PhoneNumber = info.PhoneNumber;
-                        userDetails.WorkStatus = info.OnWorkStatus;
+                        userDetails = await _userDetailService.TryGetUserDetail(userDetails, turnContext.Activity.From.Id);
                         await _botStateService.SaveChangesAsync(turnContext);
 
                         var card = new HeroCard
                         {
-                            Title = $"คุณ {info.Name} ได้ทำการผูก line account กับ mana เรียบร้อยแล้ว",
+                            Title = $"คุณ {userDetails.UserName} ได้ทำการผูก line account กับ mana เรียบร้อยแล้ว",
                             Buttons = new List<CardAction> {
                                 new(ActionTypes.ImBack, title: "พร้อมเริ่มงาน", value: "พร้อมเริ่มงาน")
                             }
@@ -116,15 +113,20 @@ namespace Playground.Controllers
         public async Task<IActionResult> Ordering(string botUserId)
         {
             var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
-                await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, RequestBotCallback, default(CancellationToken));
+            await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, RequestBotCallback, default(CancellationToken));
             return Ok();
 
             async Task RequestBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
             {
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
 
-                var riderDetailsApi = $"{_connectionSetting.DeliveryAPIBaseUrl}/api/Rider/GetRiderInfo/{userDetails.RiderId}";
-                var request = await _restClientService.Get<EmployeeDetails>(riderDetailsApi, turnContext.Activity.From.Id);
+                if (userDetails is null || string.IsNullOrWhiteSpace(userDetails.RiderId))
+                {
+                    userDetails = await _userDetailService.TryGetUserDetail(userDetails, turnContext.Activity.From.Id);
+                    await _botStateService.SaveChangesAsync(turnContext);
+                }
+
+                var request = await _userDetailService.GetOrderRequest(userDetails, turnContext.Activity.From.Id);
                 if (request.OrderRequest == null) return;
 
                 userDetails.RequestOrder = request.OrderRequest._id;
@@ -149,7 +151,7 @@ namespace Playground.Controllers
         public async Task<IActionResult> Timeup(string botUserId)
         {
             var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
-                await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, TimeupBotCallback, default(CancellationToken));
+            await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, TimeupBotCallback, default(CancellationToken));
             return Ok();
 
             async Task TimeupBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
@@ -169,7 +171,7 @@ namespace Playground.Controllers
         public async Task<IActionResult> Cancel(string botUserId)
         {
             var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
-                await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, CancelBotCallback, default(CancellationToken));
+            await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, CancelBotCallback, default(CancellationToken));
             return Ok();
 
             async Task CancelBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
@@ -189,7 +191,7 @@ namespace Playground.Controllers
         public async Task<IActionResult> CancelDeny(string botUserId)
         {
             var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
-                await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, CancelDenyBotCallback, default(CancellationToken));
+            await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, CancelDenyBotCallback, default(CancellationToken));
             return Ok();
 
             async Task CancelDenyBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
@@ -204,9 +206,9 @@ namespace Playground.Controllers
 
         [HttpGet("{botUserId}")]
         public async Task<IActionResult> Done(string botUserId)
-            {
+        {
             var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
-                await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, DoneBotCallback, default(CancellationToken));
+            await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, DoneBotCallback, default(CancellationToken));
             return Ok();
 
             async Task DoneBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)

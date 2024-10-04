@@ -58,6 +58,9 @@ namespace Playground
             // Create the Bot state Service.
             services.AddTransient<IBotStateService, BotStateService>();
 
+            // Create the User's detail Service
+            services.AddTransient<IUserDetailService, UserDetailService>();
+
             // Create the Conversation reference repository
             services.AddTransient<IConversationReferenceRepository, ConversationReferenceRepository>();
 

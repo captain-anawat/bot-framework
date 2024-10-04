@@ -28,14 +28,16 @@ namespace Playground.Dialogs
         private readonly string _replaceDialogMessage = "restart dialog";
         private readonly IBotStateService _botStateService;
         private readonly IRestClientService _restClientService;
+        private readonly IUserDetailService _userDetailService;
         private readonly ILogger _logger;
         private readonly ConnectionSettings _connectionSettings;
 
-        public MainDialog(IBotStateService botStateService, IRestClientService restClientService, ILogger<MainDialog> logger, ConnectionSettings connectionSettings)
+        public MainDialog(IBotStateService botStateService, IRestClientService restClientService, IUserDetailService userDetailService,ILogger<MainDialog> logger, ConnectionSettings connectionSettings)
             : base(nameof(MainDialog))
         {
             _botStateService = botStateService;
             _restClientService = restClientService;
+            _userDetailService = userDetailService;
             _logger = logger;
             _connectionSettings = connectionSettings;
             AddDialog(new TextPrompt(nameof(TextPrompt)));
@@ -140,7 +142,8 @@ namespace Playground.Dialogs
             var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(stepContext.Context, () => new UserDetails(), cancellationToken);
             if (!userDetails.IsLinkedAccount)
             {
-                await TryGetUserDetail(userDetails);
+                userDetails = await _userDetailService.TryGetUserDetail(userDetails, stepContext.Context.Activity.From.Id);
+                await _botStateService.SaveChangesAsync(stepContext.Context);
                 if (!userDetails.IsLinkedAccount)
                 {
                     var userId = stepContext.Context.Activity.From.Id;
@@ -198,28 +201,6 @@ namespace Playground.Dialogs
                     Prompt = promptMessage,
                     Choices = _riderCmd
                 }, cancellationToken);
-            }
-
-            async Task TryGetUserDetail(UserDetails userDetails)
-            {
-                var userId = stepContext.Context.Activity.From.Id;
-                var apiStr = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/GetRiderInfoWithChatBotId";
-                var info = await _restClientService.Get<EmployeeDetails>(apiStr, userId);
-                if (info is null) return;
-
-                userDetails.IsLinkedAccount = true;
-                userDetails.RiderId = info._id;
-                userDetails.UserName = info.Name;
-                userDetails.DeliveryName = info.DeliveryName;
-                userDetails.PhoneNumber = info.PhoneNumber;
-                userDetails.WorkStatus = info.OnWorkStatus;
-                apiStr = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/GetUnfinishedOrder/{info._id}";
-                var order = await _restClientService.Get<OrderResponse>(apiStr, userId);
-                if (order is not null)
-                {
-                    userDetails.UnfinishOrder = order._id;
-                }
-                await _botStateService.SaveChangesAsync(stepContext.Context);
             }
         }
         private async Task<DialogTurnResult> StandardActStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
