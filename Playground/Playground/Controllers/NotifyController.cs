@@ -129,8 +129,6 @@ namespace Playground.Controllers
                 var request = await _userDetailService.GetOrderRequest(userDetails, turnContext.Activity.From.Id);
                 if (request.OrderRequest == null) return;
 
-                userDetails.RequestOrder = request.OrderRequest._id;
-                await _botStateService.SaveChangesAsync(turnContext);
                 var card = new HeroCard
                 {
                     Title = $"ออเดอร์ {request.OrderRequest.OrderCode}",
@@ -157,9 +155,6 @@ namespace Playground.Controllers
             async Task TimeupBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
             {
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
-
-                userDetails.RequestOrder = string.Empty;
-                await _botStateService.SaveChangesAsync(turnContext);
 
                 var messageText = "คุณกดรับไม่ทันเวลาที่กำหนด กรุณารองานถัดไป";
                 var reply = MessageFactory.SuggestedActions(_standbyCmd, messageText, null, InputHints.ExpectingInput);

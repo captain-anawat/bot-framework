@@ -32,7 +32,7 @@ namespace Playground.Dialogs
         private readonly ILogger _logger;
         private readonly ConnectionSettings _connectionSettings;
 
-        public MainDialog(IBotStateService botStateService, IRestClientService restClientService, IUserDetailService userDetailService,ILogger<MainDialog> logger, ConnectionSettings connectionSettings)
+        public MainDialog(IBotStateService botStateService, IRestClientService restClientService, IUserDetailService userDetailService, ILogger<MainDialog> logger, ConnectionSettings connectionSettings)
             : base(nameof(MainDialog))
         {
             _botStateService = botStateService;
@@ -86,16 +86,18 @@ namespace Playground.Dialogs
                         break;
 
                     case "รับออเดอร์" when userDetails.IsLinkedAccount:
-                        if (string.IsNullOrWhiteSpace(userDetails.RequestOrder))
+                        var request = await _userDetailService.GetOrderRequest(userDetails, innerDc.Context.Activity.From.Id);
+
+                        if (request.OrderRequest == null || string.IsNullOrWhiteSpace(request.OrderRequest._id))
                         {
                             messageText = "หมดเวลารับออเดอร์ กรุณารอออเดอร์ถัดไป";
                             messageActivity = MessageFactory.Text(messageText, messageText);
                             break;
                         }
-                        var acceptOrderApi = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/RiderAcceptOrder/{userDetails.RiderId}/{userDetails.RequestOrder}";
+
+                        var acceptOrderApi = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/RiderAcceptOrder/{userDetails.RiderId}/{request.OrderRequest._id}";
                         await _restClientService.Put(acceptOrderApi, innerDc.Context.Activity.From.Id, string.Empty);
-                        userDetails.UnfinishOrder = userDetails.RequestOrder;
-                        userDetails.RequestOrder = string.Empty;
+                        userDetails.UnfinishOrder = request.OrderRequest._id;
                         await _botStateService.SaveChangesAsync(innerDc.Context);
                         break;
 

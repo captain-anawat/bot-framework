@@ -9,7 +9,6 @@
         public string PhoneNumber { get; set; }
         public bool? WorkStatus { get; set; }
         public string UnfinishOrder { get; set; }
-        public string RequestOrder { get; set; }
         public ConfirmCase ConfirmAction { get; set; }
     }
 }
