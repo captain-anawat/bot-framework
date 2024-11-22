@@ -23,7 +23,6 @@ namespace Playground.Controllers
         private readonly IConversationReferenceRepository _referenceRepository;
         private readonly string _appId;
         private readonly ConnectionSettings _connectionSetting;
-        //private readonly IList<string> orderingCmd = ["ติดต่อ"];
         private readonly IList<string> _standbyCmd = ["เปิด", "ปิด", "ติดต่อ"];
 
         public NotifyController(IBotStateService botStateService, IRestClientService restClientService, IUserDetailService userDetailService, IBotFrameworkHttpAdapter adapter, IConfiguration configuration, IConversationReferenceRepository referenceRepository, ConnectionSettings connectionSetting)
@@ -109,11 +108,17 @@ namespace Playground.Controllers
             }
         }
 
-        [HttpGet("{botUserId}")]
-        public async Task<IActionResult> Ordering(string botUserId)
+        [HttpPost]
+        public async Task<IActionResult> Ordering(OrderingRequest request)
         {
-            var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
-            await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, RequestBotCallback, default(CancellationToken));
+            var invalid = request is null || request.ChatBotIds is null || request.ChatBotIds.Count is 0;
+            if (invalid) return Ok();
+
+            foreach (var botUserId in request.ChatBotIds)
+            {
+                var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
+                await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, RequestBotCallback, default(CancellationToken));
+            }
             return Ok();
 
             async Task RequestBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
