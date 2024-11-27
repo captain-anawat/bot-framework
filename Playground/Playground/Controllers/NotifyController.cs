@@ -114,9 +114,9 @@ namespace Playground.Controllers
             var invalid = request is null || request.ChatBotIds is null || request.ChatBotIds.Count is 0;
             if (invalid) return Ok();
 
-            foreach (var botUserId in request.ChatBotIds)
+            var conversationReferences = await _referenceRepository.ListConversationReferenceAsync(request.ChatBotIds);
+            foreach (var conversationReference in conversationReferences)
             {
-                var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
                 await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, RequestBotCallback, default(CancellationToken));
             }
             return Ok();

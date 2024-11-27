@@ -1,5 +1,6 @@
 ﻿using Microsoft.Bot.Schema;
 using MongoDB.Driver;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Playground.Services
@@ -8,6 +9,7 @@ namespace Playground.Services
     {
         Task AddOrUpdateConversationReferenceAsync(string key, ConversationReference reference);
         Task<ConversationReference> GetConversationReferenceAsync(string key);
+        Task<IEnumerable<ConversationReference>> ListConversationReferenceAsync(IEnumerable<string> chatbotIds);
     }
     public class ConversationReferenceRepository : IConversationReferenceRepository
     {
@@ -29,10 +31,19 @@ namespace Playground.Services
         public async Task<ConversationReference> GetConversationReferenceAsync(string key)
         {
             var filter = Builders<ConversationReference>.Filter.Eq(c => c.User.Id, key);
-            var projection = Builders<ConversationReference>.Projection.Exclude("_id"); 
+            var projection = Builders<ConversationReference>.Projection.Exclude("_id");
             return await _collection.Find(filter)
                 .Project<ConversationReference>(projection)
                 .FirstOrDefaultAsync();
+        }
+
+        public async Task<IEnumerable<ConversationReference>> ListConversationReferenceAsync(IEnumerable<string> chatbotIds)
+        {
+            var filter = Builders<ConversationReference>.Filter.In(c => c.User.Id, chatbotIds);
+            var projection = Builders<ConversationReference>.Projection.Exclude("_id");
+            return await _collection.Find(filter)
+                .Project<ConversationReference>(projection)
+                .ToListAsync();
         }
     }
 }
