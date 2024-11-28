@@ -10,7 +10,7 @@ namespace Playground.Services
     {
         Task<T> Get<T>(string endpointUrl, string userId);
         Task<T> Post<T>(string endpointUrl, string userId, string requestBody);
-        Task Put(string endpointUrl, string userId, string requestBody);
+        Task Put(string endpointUrl, string userId, string requestBody = null);
         Task<T> Put<T>(string endpointUrl, string userId, string requestBody);
     }
     public class RestClientService : IRestClientService
@@ -45,7 +45,7 @@ namespace Playground.Services
             return default;
         }
 
-        public async Task Put(string endpointUrl, string userId, string requestBody)
+        public async Task Put(string endpointUrl, string userId, string requestBody = null)
         {
             try
             {

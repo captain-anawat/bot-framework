@@ -57,6 +57,10 @@ namespace Playground.Dialogs
         }
         protected override async Task<DialogTurnResult> OnContinueDialogAsync(DialogContext innerDc, CancellationToken cancellationToken = default)
         {
+            var userId = innerDc.Context.Activity.From.Id;
+            var userName = innerDc.Context.Activity.From.Name;
+            var updateChatbotInfoApi = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/chatbot/update/{userId}/{userName}";
+            await _restClientService.Put(updateChatbotInfoApi, userId);
             var result = await InterruptAsync(innerDc, cancellationToken);
             if (result != null)
             {
