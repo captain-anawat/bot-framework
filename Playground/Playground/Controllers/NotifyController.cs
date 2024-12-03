@@ -150,11 +150,17 @@ namespace Playground.Controllers
             }
         }
 
-        [HttpGet("{botUserId}")]
-        public async Task<IActionResult> Timeup(string botUserId)
+        [HttpPost]
+        public async Task<IActionResult> Timeup(OrderingRequest request)
         {
-            var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
-            await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, TimeupBotCallback, default(CancellationToken));
+            var invalid = request is null || request.ChatBotIds is null || request.ChatBotIds.Count is 0;
+            if (invalid) return Ok();
+
+            var conversationReferences = await _referenceRepository.ListConversationReferenceAsync(request.ChatBotIds);
+            foreach (var conversationReference in conversationReferences)
+            {
+                await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, TimeupBotCallback, default(CancellationToken));
+            }
             return Ok();
 
             async Task TimeupBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
@@ -167,11 +173,17 @@ namespace Playground.Controllers
             }
         }
 
-        [HttpGet("{botUserId}")]
-        public async Task<IActionResult> Cancel(string botUserId)
+        [HttpPost]
+        public async Task<IActionResult> Cancel(OrderingRequest request)
         {
-            var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
-            await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, CancelBotCallback, default(CancellationToken));
+            var invalid = request is null || request.ChatBotIds is null || request.ChatBotIds.Count is 0;
+            if (invalid) return Ok();
+
+            var conversationReferences = await _referenceRepository.ListConversationReferenceAsync(request.ChatBotIds);
+            foreach (var conversationReference in conversationReferences)
+            {
+                await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, CancelBotCallback, default(CancellationToken));
+            }
             return Ok();
 
             async Task CancelBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
@@ -187,11 +199,17 @@ namespace Playground.Controllers
             }
         }
 
-        [HttpGet("{botUserId}")]
-        public async Task<IActionResult> CancelDeny(string botUserId)
+        [HttpPost]
+        public async Task<IActionResult> CancelDeny(OrderingRequest request)
         {
-            var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
-            await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, CancelDenyBotCallback, default(CancellationToken));
+            var invalid = request is null || request.ChatBotIds is null || request.ChatBotIds.Count is 0;
+            if (invalid) return Ok();
+
+            var conversationReferences = await _referenceRepository.ListConversationReferenceAsync(request.ChatBotIds);
+            foreach (var conversationReference in conversationReferences)
+            {
+                await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, CancelDenyBotCallback, default(CancellationToken));
+            }
             return Ok();
 
             async Task CancelDenyBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
@@ -204,11 +222,17 @@ namespace Playground.Controllers
             }
         }
 
-        [HttpGet("{botUserId}")]
-        public async Task<IActionResult> Done(string botUserId)
+        [HttpPost]
+        public async Task<IActionResult> Done(OrderingRequest request)
         {
-            var conversationReference = await _referenceRepository.GetConversationReferenceAsync(botUserId);
-            await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, DoneBotCallback, default(CancellationToken));
+            var invalid = request is null || request.ChatBotIds is null || request.ChatBotIds.Count is 0;
+            if (invalid) return Ok();
+
+            var conversationReferences = await _referenceRepository.ListConversationReferenceAsync(request.ChatBotIds);
+            foreach (var conversationReference in conversationReferences)
+            {
+                await ((BotAdapter)_adapter).ContinueConversationAsync(_appId, conversationReference, DoneBotCallback, default(CancellationToken));
+            }
             return Ok();
 
             async Task DoneBotCallback(ITurnContext turnContext, CancellationToken cancellationToken)
