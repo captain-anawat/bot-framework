@@ -113,7 +113,10 @@ namespace Playground.Dialogs
                 case "รับออเดอร์" when userDetails.IsLinkedAccount:
                     var request = await _userDetailService.GetOrderRequest(userDetails, Context.Activity.From.Id);
 
-                    if (request.OrderRequest == null || string.IsNullOrWhiteSpace(request.OrderRequest._id))
+                    var expiredRequest = request.OrderRequest == null
+                        || string.IsNullOrWhiteSpace(request.OrderRequest._id)
+                        || DateTime.UtcNow > request.OrderRequest.RequestExpiredDate;
+                    if (expiredRequest)
                     {
                         var messageText = "หมดเวลารับออเดอร์ กรุณารอออเดอร์ถัดไป";
                         messageActivity = MessageFactory.Text(messageText, messageText);

@@ -1,10 +1,13 @@
-﻿namespace Playground.Models
+﻿using System;
+
+namespace Playground.Models
 {
     public class OrderResponse
     {
         public string _id { get; set; }
         public string OrderCode { get; set; }
         public string ManaEndpoint { get; set; }
+        public DateTime? RequestExpiredDate { get; set; }
         public ContactInfo Restaurant { get; set; }
         public ContactInfo Customer { get; set; }
     }
