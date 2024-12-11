@@ -132,6 +132,7 @@ namespace Playground.Dialogs
                 case "reset":
                     userDetails.IsLinkedAccount = false;
                     userDetails.RiderId = null;
+                    userDetails.UnfinishOrder = null;
                     await _botStateService.SaveChangesAsync(Context);
                     var userId = Context.Activity.From.Id;
                     var resetApi = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/AdminWeb/LinkedRemove/{userId}";

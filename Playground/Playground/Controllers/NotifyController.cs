@@ -190,7 +190,7 @@ namespace Playground.Controllers
             {
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
 
-                userDetails.UnfinishOrder = string.Empty;
+                userDetails.UnfinishOrder = null;
                 await _botStateService.SaveChangesAsync(turnContext);
 
                 var messageText = "ออเดอร์ถูกยกเลิก";
@@ -239,7 +239,7 @@ namespace Playground.Controllers
             {
                 var userDetails = await _botStateService.UserDetailsAccessor.GetAsync(turnContext, () => new UserDetails(), cancellationToken);
 
-                userDetails.UnfinishOrder = string.Empty;
+                userDetails.UnfinishOrder = null;
                 await _botStateService.SaveChangesAsync(turnContext);
 
                 var messageText = "คุณส่งออเดอร์เรียบร้อย";

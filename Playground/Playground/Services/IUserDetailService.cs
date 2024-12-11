@@ -32,10 +32,7 @@ namespace Playground.Services
             userDetails.WorkStatus = info.OnWorkStatus;
             apiStr = $"{_connectionSettings.DeliveryAPIBaseUrl}/api/Rider/GetUnfinishedOrder/{info._id}";
             var order = await _restClientService.Get<OrderResponse>(apiStr, userId);
-            if (order is not null)
-            {
-                userDetails.UnfinishOrder = order._id;
-            }
+            userDetails.UnfinishOrder = order is not null ? order._id : null;
             return userDetails;
         }
 
